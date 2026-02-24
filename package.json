@@ -3,7 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch server.ts",
-    "start": "tsx server.ts"
+    "start": "tsx server.ts",
+    "postinstall": "chmod +x node_modules/node-pty/prebuilds/*/spawn-helper"
   },
   "dependencies": {
     "node-pty": "^1.1.0",
