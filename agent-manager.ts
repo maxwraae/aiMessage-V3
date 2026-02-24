@@ -6,6 +6,7 @@ import * as crypto from "node:crypto";
 
 export type Agent = {
   id: string;
+  type: "terminal";
   projectPath: string;
   tmuxSession: string;
   status: "running" | "stopped";
@@ -23,6 +24,7 @@ function init() {
       const agent: Agent = JSON.parse(
         fs.readFileSync(path.join(agentsDir, file), "utf-8")
       );
+      agent.type = "terminal"; // backfill for pre-Slice4 persisted agents
       agent.startedAt = new Date(agent.startedAt);
       try {
         execSync(`tmux has-session -t ${agent.tmuxSession}`, { stdio: "ignore" });
@@ -67,6 +69,7 @@ export function spawnAgent(projectPath: string, resumeSessionId?: string): Agent
 
   const agent: Agent = {
     id,
+    type: "terminal",
     projectPath,
     tmuxSession: sessionName,
     status: "running",

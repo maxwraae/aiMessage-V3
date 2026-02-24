@@ -9,6 +9,6 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["server.ts", "shared/**/*"],
+  "include": ["*.ts", "shared/**/*"],
   "exclude": ["node_modules", "dist", "client"]
 }

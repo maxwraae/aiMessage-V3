@@ -7,6 +7,16 @@ import { WebSocketServer } from "ws";
 import pty from "node-pty";
 import { listProjects, listSessions } from "./session-discovery.js";
 import { spawnAgent, listAgents, killAgent } from "./agent-manager.js";
+import {
+  spawnChatAgent,
+  listChatAgents,
+  killChatAgent,
+  subscribeChatAgent,
+  unsubscribeChatAgent,
+  sendMessage,
+  getChatAgent,
+} from "./chat-agent.js";
+import type { ChatWsClientMessage } from "./shared/stream-types.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const DIST = join(__dirname, "dist");
@@ -39,7 +49,7 @@ const server = createServer((req, res) => {
 
   if (req.url === "/api/agents" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(listAgents()));
+    res.end(JSON.stringify([...listAgents(), ...listChatAgents()]));
     return;
   }
 
@@ -48,10 +58,20 @@ const server = createServer((req, res) => {
     req.on("data", (chunk) => (body += chunk));
     req.on("end", () => {
       try {
-        const { projectPath, resumeSessionId } = JSON.parse(body) as { projectPath: string; resumeSessionId?: string };
-        const agent = spawnAgent(projectPath, resumeSessionId);
-        res.writeHead(201, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(agent));
+        const payload = JSON.parse(body) as {
+          projectPath: string;
+          resumeSessionId?: string;
+          type?: "terminal" | "chat";
+        };
+        if (payload.type === "chat") {
+          const agent = spawnChatAgent(payload.projectPath);
+          res.writeHead(201, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(agent));
+        } else {
+          const agent = spawnAgent(payload.projectPath, payload.resumeSessionId);
+          res.writeHead(201, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(agent));
+        }
       } catch (err) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: String(err) }));
@@ -62,7 +82,11 @@ const server = createServer((req, res) => {
 
   if (req.url?.match(/^\/api\/agents\/([^/]+)$/) && req.method === "DELETE") {
     const id = req.url.match(/^\/api\/agents\/([^/]+)$/)![1];
-    killAgent(id);
+    if (getChatAgent(id)) {
+      killChatAgent(id);
+    } else {
+      killAgent(id);
+    }
     res.writeHead(204);
     res.end();
     return;
@@ -100,7 +124,32 @@ server.on("upgrade", (req: IncomingMessage, socket, head) => {
 });
 
 wss.on("connection", (ws, req: IncomingMessage) => {
-  const segment = req.url?.slice(4) ?? "main";
+  const urlPath = req.url ?? "";
+
+  // Chat WebSocket: /ws/chat/{agentId}
+  if (urlPath.startsWith("/ws/chat/")) {
+    const agentId = urlPath.slice(9);
+    subscribeChatAgent(agentId, ws);
+
+    ws.on("message", (raw) => {
+      try {
+        const msg = JSON.parse(raw.toString()) as ChatWsClientMessage;
+        if (msg.type === "user_input") {
+          sendMessage(agentId, msg.text);
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    });
+
+    ws.on("close", () => {
+      unsubscribeChatAgent(agentId, ws);
+    });
+    return;
+  }
+
+  // Terminal WebSocket: /ws/{tmuxSession}
+  const segment = urlPath.slice(4); // strip /ws/
   const tmuxSession = segment.length > 0 ? segment : "main";
 
   let ptyProcess: ReturnType<typeof pty.spawn> | null = null;

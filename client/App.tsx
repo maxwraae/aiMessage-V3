@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import TerminalView from "./components/TerminalView";
+import ChatView from "./components/ChatView";
 
 type Project = {
   key: string;
@@ -9,13 +10,25 @@ type Project = {
   sessionCount: number;
 };
 
-type Agent = {
+type TerminalAgent = {
   id: string;
+  type: "terminal";
   projectPath: string;
   tmuxSession: string;
   status: "running" | "stopped";
   startedAt: string;
 };
+
+type ChatAgentData = {
+  id: string;
+  type: "chat";
+  projectPath: string;
+  companionSession: string;
+  status: "running" | "stopped";
+  startedAt: string;
+};
+
+type AnyAgent = TerminalAgent | ChatAgentData;
 
 type Session = {
   id: string;
@@ -25,12 +38,23 @@ type Session = {
   modified: string;
 };
 
+type SelectedState = {
+  agent: AnyAgent;
+  view: "chat" | "terminal";
+};
+
+// Returns the WebSocket path for the terminal view of any agent
+function terminalWsPath(agent: AnyAgent): string {
+  if (agent.type === "terminal") return agent.tmuxSession;
+  return agent.companionSession;
+}
+
 export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null); // tmuxSession name
+  const [agents, setAgents] = useState<AnyAgent[]>([]);
+  const [selected, setSelected] = useState<SelectedState | null>(null);
   const [spawning, setSpawning] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -47,7 +71,7 @@ export default function App() {
 
   function openProject(project: Project) {
     setSelectedProject(project);
-    setSelectedAgentId(null);
+    setSelected(null);
     setSessions([]);
     fetch(`/api/projects/${encodeURIComponent(project.key)}/sessions`)
       .then((r) => r.json())
@@ -58,21 +82,25 @@ export default function App() {
   function goBack() {
     setSelectedProject(null);
     setSessions([]);
-    setSelectedAgentId(null);
+    setSelected(null);
   }
 
-  async function startAgent(resumeSessionId?: string) {
+  async function startAgent(type: "chat" | "terminal", resumeSessionId?: string) {
     if (!selectedProject) return;
     setSpawning(true);
     try {
       const res = await fetch("/api/agents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectPath: selectedProject.path, resumeSessionId }),
+        body: JSON.stringify({
+          projectPath: selectedProject.path,
+          type,
+          resumeSessionId,
+        }),
       });
-      const agent: Agent = await res.json();
+      const agent: AnyAgent = await res.json();
       setAgents((prev) => [...prev, agent]);
-      setSelectedAgentId(agent.tmuxSession);
+      setSelected({ agent, view: type === "chat" ? "chat" : "terminal" });
     } catch {
       // ignore
     } finally {
@@ -80,10 +108,26 @@ export default function App() {
     }
   }
 
-  async function killAgent(id: string, tmuxSession: string) {
-    await fetch(`/api/agents/${id}`, { method: "DELETE" }).catch(() => {});
-    setAgents((prev) => prev.filter((a) => a.id !== id));
-    if (selectedAgentId === tmuxSession) setSelectedAgentId(null);
+  async function killAgent(agent: AnyAgent) {
+    await fetch(`/api/agents/${agent.id}`, { method: "DELETE" }).catch(() => {});
+    setAgents((prev) => prev.filter((a) => a.id !== agent.id));
+    if (selected?.agent.id === agent.id) setSelected(null);
+  }
+
+  function selectAgent(agent: AnyAgent) {
+    setSelected({
+      agent,
+      view: agent.type === "chat" ? "chat" : "terminal",
+    });
+  }
+
+  function toggleView() {
+    if (!selected) return;
+    setSelected((prev) =>
+      prev
+        ? { ...prev, view: prev.view === "chat" ? "terminal" : "chat" }
+        : null
+    );
   }
 
   const projectAgents = selectedProject
@@ -92,6 +136,10 @@ export default function App() {
 
   const activeAgentCount = (p: Project) =>
     agents.filter((a) => a.projectPath === p.path && a.status === "running").length;
+
+  const chatAgentCount = selectedProject
+    ? agents.filter((a) => a.projectPath === selectedProject.path && a.type === "chat" && a.status === "running").length
+    : 0;
 
   return (
     <div className="flex h-screen bg-[#1a1b26] text-[#a9b1d6]">
@@ -112,13 +160,25 @@ export default function App() {
             {selectedProject ? selectedProject.name : "aiMessage"}
           </h1>
           {selectedProject && (
-            <button
-              onClick={() => startAgent()}
-              disabled={spawning}
-              className="ml-auto text-xs text-[#7aa2f7] hover:text-[#89b4fa] disabled:opacity-50 flex-shrink-0"
-            >
-              {spawning ? "…" : "+ New"}
-            </button>
+            <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={() => startAgent("chat")}
+                disabled={spawning}
+                className="text-xs text-[#7aa2f7] hover:text-[#89b4fa] disabled:opacity-50"
+                title="New chat agent"
+              >
+                {spawning ? "…" : "+ Chat"}
+              </button>
+              <span className="text-[#292e42]">|</span>
+              <button
+                onClick={() => startAgent("terminal")}
+                disabled={spawning}
+                className="text-xs text-[#565f89] hover:text-[#a9b1d6] disabled:opacity-50"
+                title="New terminal agent"
+              >
+                Term
+              </button>
+            </div>
           )}
         </div>
 
@@ -149,39 +209,41 @@ export default function App() {
             );
           })}
 
-          {/* Session list (inside a project) */}
+          {/* Agent list (inside a project) */}
           {selectedProject && (
             <>
-              {/* Running agents first */}
-              {projectAgents.map((agent) => (
-                <div
-                  key={agent.id}
-                  onClick={() => setSelectedAgentId(agent.tmuxSession)}
-                  className={`px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 group flex items-center justify-between ${
-                    selectedAgentId === agent.tmuxSession ? "bg-[#292e42]" : "hover:bg-[#1f2335]"
-                  }`}
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-[#7aa2f7] truncate flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#9ece6a] flex-shrink-0" />
-                      agent-{agent.id}
-                    </div>
-                    <div className="text-xs text-[#565f89] mt-0.5">running</div>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); killAgent(agent.id, agent.tmuxSession); }}
-                    className="text-xs text-[#565f89] hover:text-[#f7768e] opacity-0 group-hover:opacity-100"
+              {projectAgents.map((agent) => {
+                const isSelected = selected?.agent.id === agent.id;
+                return (
+                  <div
+                    key={agent.id}
+                    onClick={() => selectAgent(agent)}
+                    className={`px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 group flex items-center justify-between ${
+                      isSelected ? "bg-[#292e42]" : "hover:bg-[#1f2335]"
+                    }`}
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-[#7aa2f7] truncate flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#9ece6a] flex-shrink-0" />
+                        {agent.type === "chat" ? "chat" : "term"}-{agent.id}
+                      </div>
+                      <div className="text-xs text-[#565f89] mt-0.5">{agent.type}</div>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); killAgent(agent); }}
+                      className="text-xs text-[#565f89] hover:text-[#f7768e] opacity-0 group-hover:opacity-100"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
 
               {/* Past sessions */}
               {sessions.map((session) => (
                 <div
                   key={session.id}
-                  onClick={() => startAgent(session.id)}
+                  onClick={() => startAgent("terminal", session.id)}
                   className="px-3 py-2.5 rounded-lg mb-0.5 hover:bg-[#1f2335] cursor-pointer"
                 >
                   <div className="text-sm text-[#c0caf5] truncate">
@@ -207,13 +269,31 @@ export default function App() {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {selectedAgentId ? (
+        {selected ? (
           <>
+            {/* Header bar with toggle */}
             <div className="h-9 flex-shrink-0 bg-[#16161e] border-b border-[#292e42] flex items-center px-4">
-              <span className="text-xs text-[#565f89]">{selectedAgentId}</span>
+              <span className="text-xs text-[#565f89] truncate flex-1">
+                {selected.agent.type === "chat" ? "chat" : "term"}-{selected.agent.id}
+              </span>
+              {/* Toggle: only chat agents can toggle */}
+              {selected.agent.type === "chat" && (
+                <button
+                  onClick={toggleView}
+                  className="flex-shrink-0 text-xs px-2.5 py-1 rounded-md border border-[#292e42] text-[#565f89] hover:text-[#c0caf5] hover:border-[#414868] transition-colors"
+                >
+                  {selected.view === "chat" ? "Terminal" : "Chat"}
+                </button>
+              )}
             </div>
+
+            {/* Content */}
             <div className="flex-1 overflow-hidden">
-              <TerminalView agentId={selectedAgentId} />
+              {selected.view === "chat" && selected.agent.type === "chat" ? (
+                <ChatView agentId={selected.agent.id} />
+              ) : (
+                <TerminalView agentId={terminalWsPath(selected.agent)} />
+              )}
             </div>
           </>
         ) : (
