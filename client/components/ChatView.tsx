@@ -5,9 +5,10 @@ type AgentStatus = "idle" | "thinking" | "done" | "error" | "connecting";
 
 type ToolCallItemProps = {
   item: Extract<StreamItem, { kind: "tool_call" }>;
+  isTiled?: boolean;
 };
 
-function ToolCallItem({ item }: ToolCallItemProps) {
+function ToolCallItem({ item, isTiled }: ToolCallItemProps) {
   const [expanded, setExpanded] = useState(false);
 
   const statusIcon =
@@ -19,27 +20,27 @@ function ToolCallItem({ item }: ToolCallItemProps) {
     item.status === "completed" ? "text-[#9ece6a]" : "text-[#f7768e]";
 
   return (
-    <div className="my-1">
+    <div className={isTiled ? "my-0.5" : "my-1"}>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-2 text-xs text-[#565f89] hover:text-[#a9b1d6] transition-colors"
+        className={`flex items-center gap-2 text-[#565f89] hover:text-[#a9b1d6] transition-colors ${isTiled ? "text-[10px]" : "text-xs"}`}
       >
         <span className={`font-mono ${statusColor}`}>{statusIcon}</span>
         <span className="font-medium">{item.name}</span>
         <span className="opacity-50">{expanded ? "▲" : "▼"}</span>
       </button>
       {expanded && (
-        <div className="mt-1.5 ml-4 rounded-md bg-[#16161e] border border-[#292e42] overflow-hidden">
-          <div className="px-3 py-2 border-b border-[#292e42]">
-            <div className="text-[10px] text-[#565f89] uppercase tracking-wide mb-1">Input</div>
-            <pre className="text-xs text-[#a9b1d6] whitespace-pre-wrap break-all font-mono">
+        <div className={`mt-1 ml-2 rounded-md bg-[#16161e] border border-[#292e42] overflow-hidden ${isTiled ? "ml-2" : "ml-4"}`}>
+          <div className="px-2 py-1.5 border-b border-[#292e42]">
+            <div className="text-[9px] text-[#565f89] uppercase tracking-wide mb-0.5">Input</div>
+            <pre className={`whitespace-pre-wrap break-all font-mono ${isTiled ? "text-[10px]" : "text-xs text-[#a9b1d6]"}`}>
               {JSON.stringify(item.input, null, 2)}
             </pre>
           </div>
           {item.result !== undefined && (
-            <div className="px-3 py-2">
-              <div className="text-[10px] text-[#565f89] uppercase tracking-wide mb-1">Output</div>
-              <pre className="text-xs text-[#a9b1d6] whitespace-pre-wrap break-all font-mono max-h-48 overflow-y-auto">
+            <div className="px-2 py-1.5">
+              <div className="text-[9px] text-[#565f89] uppercase tracking-wide mb-0.5">Output</div>
+              <pre className={`whitespace-pre-wrap break-all font-mono max-h-32 overflow-y-auto ${isTiled ? "text-[10px]" : "text-xs text-[#a9b1d6]"}`}>
                 {typeof item.result === "string"
                   ? item.result
                   : JSON.stringify(item.result, null, 2)}
@@ -54,36 +55,37 @@ function ToolCallItem({ item }: ToolCallItemProps) {
 
 type ThoughtItemProps = {
   item: Extract<StreamItem, { kind: "thought" }>;
+  isTiled?: boolean;
 };
 
-function ThoughtItem({ item }: ThoughtItemProps) {
+function ThoughtItem({ item, isTiled }: ThoughtItemProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="my-1">
+    <div className={isTiled ? "my-0.5" : "my-1"}>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-2 text-xs text-[#414868] hover:text-[#565f89] transition-colors italic"
+        className={`flex items-center gap-2 text-[#414868] hover:text-[#565f89] transition-colors italic ${isTiled ? "text-[10px]" : "text-xs"}`}
       >
         <span>💭</span>
         <span>{expanded ? "Hide thinking" : "Show thinking"}</span>
         <span className="opacity-50">{expanded ? "▲" : "▼"}</span>
       </button>
       {expanded && (
-        <div className="mt-1.5 ml-4 px-3 py-2 rounded-md bg-[#16161e] border border-[#1f2335]">
-          <p className="text-xs text-[#414868] italic whitespace-pre-wrap">{item.text}</p>
+        <div className={`mt-1 px-2 py-1.5 rounded-md bg-[#16161e] border border-[#1f2335] ${isTiled ? "ml-2" : "ml-4"}`}>
+          <p className={`text-[#414868] italic whitespace-pre-wrap ${isTiled ? "text-[10px]" : "text-xs"}`}>{item.text}</p>
         </div>
       )}
     </div>
   );
 }
 
-function MessageBubble({ item }: { item: StreamItem }) {
+function MessageBubble({ item, isTiled }: { item: StreamItem; isTiled?: boolean }) {
   if (item.kind === "user_message") {
     return (
-      <div className="flex justify-end mb-3">
-        <div className="max-w-[75%] rounded-2xl rounded-tr-sm px-4 py-2.5 bg-[#3d59a1] text-[#c0caf5]">
-          <p className="text-sm whitespace-pre-wrap break-words">{item.text}</p>
+      <div className={`flex justify-end ${isTiled ? "mb-2" : "mb-3"}`}>
+        <div className={`rounded-2xl rounded-tr-sm bg-[#3d59a1] text-[#c0caf5] ${isTiled ? "max-w-[90%] px-3 py-1.5" : "max-w-[75%] px-4 py-2.5"}`}>
+          <p className={`whitespace-pre-wrap break-words ${isTiled ? "text-xs" : "text-sm"}`}>{item.text}</p>
         </div>
       </div>
     );
@@ -91,9 +93,9 @@ function MessageBubble({ item }: { item: StreamItem }) {
 
   if (item.kind === "assistant_message") {
     return (
-      <div className="flex justify-start mb-3">
-        <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-2.5 bg-[#1f2335] text-[#a9b1d6]">
-          <p className="text-sm whitespace-pre-wrap break-words">{item.text}</p>
+      <div className={`flex justify-start ${isTiled ? "mb-2" : "mb-3"}`}>
+        <div className={`rounded-2xl rounded-tl-sm bg-[#1f2335] text-[#a9b1d6] ${isTiled ? "max-w-[95%] px-3 py-1.5" : "max-w-[85%] px-4 py-2.5"}`}>
+          <p className={`whitespace-pre-wrap break-words ${isTiled ? "text-xs" : "text-sm"}`}>{item.text}</p>
         </div>
       </div>
     );
@@ -102,8 +104,8 @@ function MessageBubble({ item }: { item: StreamItem }) {
   if (item.kind === "text_delta") {
     return (
       <div className="flex justify-start mb-1">
-        <div className="max-w-[85%] rounded-2xl px-4 py-2 bg-[#1f2335]/50 text-[#a9b1d6] border border-[#292e42]/30">
-          <p className="text-sm whitespace-pre-wrap break-words">{item.text}</p>
+        <div className={`rounded-2xl bg-[#1f2335]/50 text-[#a9b1d6] border border-[#292e42]/30 ${isTiled ? "max-w-[95%] px-3 py-1" : "max-w-[85%] px-4 py-2"}`}>
+          <p className={`whitespace-pre-wrap break-words ${isTiled ? "text-xs" : "text-sm"}`}>{item.text}</p>
         </div>
       </div>
     );
@@ -111,24 +113,24 @@ function MessageBubble({ item }: { item: StreamItem }) {
 
   if (item.kind === "thought") {
     return (
-      <div className="mb-2 px-1">
-        <ThoughtItem item={item} />
+      <div className={`${isTiled ? "mb-1" : "mb-2"} px-1`}>
+        <ThoughtItem item={item} isTiled={isTiled} />
       </div>
     );
   }
 
   if (item.kind === "tool_call") {
     return (
-      <div className="mb-1.5 px-1">
-        <ToolCallItem item={item} />
+      <div className={`${isTiled ? "mb-1" : "mb-1.5"} px-1`}>
+        <ToolCallItem item={item} isTiled={isTiled} />
       </div>
     );
   }
 
   if (item.kind === "system") {
     return (
-      <div className="my-2 px-3 py-2 rounded bg-[#16161e] border-l-2 border-[#565f89]">
-        <p className="text-[10px] font-mono text-[#565f89] whitespace-pre-wrap break-all opacity-70">
+      <div className={`my-1 px-2 py-1 rounded bg-[#16161e] border-l-2 border-[#565f89] ${isTiled ? "opacity-50" : "opacity-70"}`}>
+        <p className={`font-mono text-[#565f89] whitespace-pre-wrap break-all ${isTiled ? "text-[9px]" : "text-[10px]"}`}>
           {item.text}
         </p>
       </div>
@@ -137,8 +139,8 @@ function MessageBubble({ item }: { item: StreamItem }) {
 
   if (item.kind === "error") {
     return (
-      <div className="flex justify-start mb-3">
-        <div className="max-w-[85%] rounded-lg px-4 py-2.5 bg-[#2d1b21] border border-[#f7768e]/30 text-[#f7768e]">
+      <div className={`flex justify-start ${isTiled ? "mb-2" : "mb-3"}`}>
+        <div className={`rounded-lg bg-[#2d1b21] border border-[#f7768e]/30 text-[#f7768e] ${isTiled ? "max-w-[95%] px-3 py-1.5" : "max-w-[85%] px-4 py-2.5"}`}>
           <p className="text-xs whitespace-pre-wrap break-words">{item.text}</p>
         </div>
       </div>
@@ -152,9 +154,10 @@ type Props = {
   agentId: string;
   onTitleUpdate?: (title: string) => void;
   onUnreadReset?: () => void;
+  isTiled?: boolean;
 };
 
-export default function ChatView({ agentId, onTitleUpdate, onUnreadReset }: Props) {
+export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, isTiled }: Props) {
   const [items, setItems] = useState<StreamItem[]>([]);
   const [status, setStatus] = useState<AgentStatus>("connecting");
   const [input, setInput] = useState("");
@@ -162,10 +165,8 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset }: Prop
   const wsRef = useRef<WebSocket | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Deduplicate and update items
   const upsertItem = useCallback((item: StreamItem) => {
     setItems((prev) => {
-      // Update tool calls
       if (item.kind === "tool_call") {
         const idx = prev.findIndex((i) => i.kind === "tool_call" && i.id === item.id);
         if (idx !== -1) {
@@ -174,9 +175,6 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset }: Prop
           return next;
         }
       }
-      
-      // Merge consecutive text deltas if they share the same ID (unlikely but possible)
-      // Or just append
       return [...prev, item];
     });
   }, []);
@@ -213,7 +211,6 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset }: Prop
     };
   }, [agentId, upsertItem]);
 
-  // Auto-scroll on new items
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [items]);
@@ -240,18 +237,18 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset }: Prop
   return (
     <div className="flex flex-col h-full bg-[#1a1b26]">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className={`flex-1 overflow-y-auto ${isTiled ? "px-2 py-2" : "px-4 py-4"}`}>
         {items.length === 0 && status !== "connecting" && (
           <div className="flex items-center justify-center h-full">
             <p className="text-sm text-[#414868]">Send a message to start</p>
           </div>
         )}
         {items.map((item, idx) => (
-          <MessageBubble key={item.id + idx} item={item} />
+          <MessageBubble key={item.id + idx} item={item} isTiled={isTiled} />
         ))}
         {isThinking && (
-          <div className="flex justify-start mb-3">
-            <div className="rounded-2xl rounded-tl-sm px-4 py-2.5 bg-[#1f2335]">
+          <div className={`flex justify-start ${isTiled ? "mb-2" : "mb-3"}`}>
+            <div className={`rounded-2xl rounded-tl-sm bg-[#1f2335] ${isTiled ? "px-3 py-1.5" : "px-4 py-2.5"}`}>
               <div className="flex gap-1 items-center h-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#565f89] animate-bounce [animation-delay:0ms]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-[#565f89] animate-bounce [animation-delay:150ms]" />
@@ -264,31 +261,35 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset }: Prop
       </div>
 
       {/* Input bar */}
-      <div className="flex-shrink-0 border-t border-[#292e42] bg-[#16161e] px-4 py-3">
+      <div className={`flex-shrink-0 border-t border-[#292e42] bg-[#16161e] ${isTiled ? "px-2 py-2" : "px-4 py-3"}`}>
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Message Claude…"
+            placeholder={isTiled ? "Reply..." : "Message Claude…"}
             rows={1}
             disabled={status === "connecting" || status === "error"}
-            className="flex-1 resize-none bg-[#1f2335] border border-[#292e42] rounded-xl px-4 py-2.5 text-sm text-[#c0caf5] placeholder-[#414868] focus:outline-none focus:border-[#3d59a1] transition-colors max-h-36 overflow-y-auto disabled:opacity-40"
+            className={`flex-1 resize-none bg-[#1f2335] border border-[#292e42] rounded-xl text-[#c0caf5] placeholder-[#414868] focus:outline-none focus:border-[#3d59a1] transition-colors max-h-36 overflow-y-auto disabled:opacity-40 ${
+              isTiled ? "px-3 py-1.5 text-xs" : "px-4 py-2.5 text-sm"
+            }`}
             style={{ fieldSizing: "content" } as React.CSSProperties}
           />
           <button
             onClick={sendUserMessage}
             disabled={!canSend}
-            className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#3d59a1] text-[#c0caf5] flex items-center justify-center hover:bg-[#4a6dbf] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className={`flex-shrink-0 rounded-xl bg-[#3d59a1] text-[#c0caf5] flex items-center justify-center hover:bg-[#4a6dbf] disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${
+              isTiled ? "w-7 h-7" : "w-9 h-9"
+            }`}
             aria-label="Send"
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <svg width={isTiled ? "10" : "14"} height={isTiled ? "10" : "14"} viewBox="0 0 14 14" fill="none">
               <path d="M7 1L13 7L7 13M13 7H1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
-        {status === "error" && (
+        {status === "error" && !isTiled && (
           <p className="text-xs text-[#f7768e] mt-1.5">Connection lost</p>
         )}
       </div>

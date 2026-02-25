@@ -33,7 +33,7 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [agents, setAgents] = useState<ChatAgentData[]>([]);
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [activeAgentIds, setActiveAgentIds] = useState<string[]>([]);
   const [spawning, setSpawning] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -50,7 +50,7 @@ export default function App() {
 
   function openProject(project: Project) {
     setSelectedProject(project);
-    setSelectedAgentId(null);
+    setActiveAgentIds([]);
     setSessions([]);
     fetch(`/api/projects/${encodeURIComponent(project.key)}/sessions`)
       .then((r) => r.json())
@@ -61,10 +61,10 @@ export default function App() {
   function goBack() {
     setSelectedProject(null);
     setSessions([]);
-    setSelectedAgentId(null);
+    setActiveAgentIds([]);
   }
 
-  async function startAgent(resumeSessionId?: string) {
+  async function startAgent(resumeSessionId?: string, split: boolean = false) {
     if (!selectedProject) return;
     setSpawning(true);
     try {
@@ -79,7 +79,12 @@ export default function App() {
       });
       const agent: ChatAgentData = await res.json();
       setAgents((prev) => [...prev, agent]);
-      setSelectedAgentId(agent.id);
+      
+      if (split && activeAgentIds.length < 4) {
+        setActiveAgentIds(prev => [...prev, agent.id]);
+      } else {
+        setActiveAgentIds([agent.id]);
+      }
     } catch {
       // ignore
     } finally {
@@ -90,7 +95,25 @@ export default function App() {
   async function killAgent(agent: ChatAgentData) {
     await fetch(`/api/agents/${agent.id}`, { method: "DELETE" }).catch(() => {});
     setAgents((prev) => prev.filter((a) => a.id !== agent.id));
-    if (selectedAgentId === agent.id) setSelectedAgentId(null);
+    setActiveAgentIds((prev) => prev.filter((id) => id !== agent.id));
+  }
+
+  function toggleAgentOnStage(agentId: string, split: boolean = false) {
+    if (split) {
+      if (activeAgentIds.includes(agentId)) {
+        // Flash effect or just do nothing
+        return;
+      }
+      if (activeAgentIds.length < 4) {
+        setActiveAgentIds(prev => [...prev, agentId]);
+      }
+    } else {
+      setActiveAgentIds([agentId]);
+    }
+  }
+
+  function removeFromStage(agentId: string) {
+    setActiveAgentIds(prev => prev.filter(id => id !== agentId));
   }
 
   const projectAgents = selectedProject
@@ -111,6 +134,13 @@ export default function App() {
 
   const activeAgentCount = (p: Project) =>
     agents.filter((a) => a.projectPath === p.path && a.status === "running").length;
+
+  // Grid layout logic
+  const getGridClass = (count: number) => {
+    if (count <= 1) return "grid-cols-1";
+    if (count === 2) return "grid-cols-1 lg:grid-cols-2";
+    return "grid-cols-1 lg:grid-cols-2 lg:grid-rows-2";
+  };
 
   return (
     <div className="flex h-screen bg-[#1a1b26] text-[#a9b1d6]">
@@ -173,16 +203,16 @@ export default function App() {
           {selectedProject && (
             <>
               {projectAgents.map((agent) => {
-                const isSelected = selectedAgentId === agent.id;
+                const isSelected = activeAgentIds.includes(agent.id);
                 return (
                   <div
                     key={agent.id}
-                    onClick={() => setSelectedAgentId(agent.id)}
-                    className={`px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 group flex items-center justify-between ${
+                    onClick={() => toggleAgentOnStage(agent.id)}
+                    className={`px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 group flex items-center justify-between transition-colors ${
                       isSelected ? "bg-[#292e42]" : "hover:bg-[#1f2335]"
                     }`}
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-[#7aa2f7] truncate flex items-center gap-1.5">
                         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                           agent.agentStatus === "thinking" ? "bg-[#e0af68] animate-pulse" : 
@@ -191,7 +221,20 @@ export default function App() {
                         {agent.title}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {/* Split View Toggle Icon */}
+                      {!isSelected && activeAgentIds.length > 0 && activeAgentIds.length < 4 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleAgentOnStage(agent.id, true); }}
+                          className="p-1 rounded text-[#565f89] hover:text-[#7aa2f7] hover:bg-[#16161e] opacity-0 group-hover:opacity-100 transition-all"
+                          title="Add to split view"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18M3 12h18"/>
+                          </svg>
+                        </button>
+                      )}
+                      
                       {agent.unreadCount > 0 && (
                         <span className="flex-shrink-0 text-[10px] bg-[#f7768e] text-[#1a1b26] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
                           {agent.unreadCount}
@@ -199,7 +242,7 @@ export default function App() {
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); killAgent(agent); }}
-                        className="text-xs text-[#565f89] hover:text-[#f7768e] opacity-0 group-hover:opacity-100"
+                        className="p-1 rounded text-[#565f89] hover:text-[#f7768e] hover:bg-[#16161e] opacity-0 group-hover:opacity-100"
                       >
                         ✕
                       </button>
@@ -215,14 +258,26 @@ export default function App() {
               {sessions.map((session) => (
                 <div
                   key={session.id}
+                  className="px-3 py-2 rounded-lg mb-0.5 hover:bg-[#1f2335] cursor-pointer group flex items-center justify-between"
                   onClick={() => startAgent(session.id)}
-                  className="px-3 py-2 rounded-lg mb-0.5 hover:bg-[#1f2335] cursor-pointer"
                 >
-                  <div className="text-sm text-[#c0caf5] truncate">
-                    {session.title ?? session.id.slice(0, 8)}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-[#c0caf5] truncate group-hover:text-[#7aa2f7] transition-colors">
+                      {session.title ?? session.id.slice(0, 8)}
+                    </div>
                   </div>
-                  {session.preview && (
-                    <div className="text-xs text-[#565f89] mt-0.5 truncate">{session.preview}</div>
+                  
+                  {/* Split View Icon for History */}
+                  {activeAgentIds.length > 0 && activeAgentIds.length < 4 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }}
+                      className="p-1 rounded text-[#565f89] hover:text-[#7aa2f7] hover:bg-[#16161e] opacity-0 group-hover:opacity-100 transition-all"
+                      title="Resume in split view"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18M3 12h18"/>
+                      </svg>
+                    </button>
                   )}
                 </div>
               ))}
@@ -239,15 +294,49 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main area */}
+      {/* Main area - The Stage */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {selectedAgentId ? (
-          <div className="flex-1 overflow-hidden">
-            <ChatView 
-              agentId={selectedAgentId} 
-              onTitleUpdate={(title) => handleTitleUpdate(selectedAgentId, title)}
-              onUnreadReset={() => handleUnreadReset(selectedAgentId)}
-            />
+        {activeAgentIds.length > 0 ? (
+          <div className={`flex-1 grid gap-px bg-[#292e42] ${getGridClass(activeAgentIds.length)}`}>
+            {activeAgentIds.map((id, index) => {
+              const agent = agents.find(a => a.id === id);
+              // In mobile (fallback), we only show the last active chat
+              const isHiddenOnMobile = index !== activeAgentIds.length - 1;
+              
+              return (
+                <div 
+                  key={id} 
+                  className={`bg-[#1a1b26] flex flex-col overflow-hidden relative ${isHiddenOnMobile ? "hidden lg:flex" : "flex"} ${
+                    activeAgentIds.length === 3 && index === 0 ? "lg:row-span-2" : ""
+                  }`}
+                >
+                  {/* Tile Header */}
+                  {activeAgentIds.length > 1 && (
+                    <div className="h-8 flex-shrink-0 bg-[#16161e] border-b border-[#292e42] flex items-center px-3 justify-between">
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-[#565f89] truncate">
+                        {agent?.title || "Loading..."}
+                      </span>
+                      <button 
+                        onClick={() => removeFromStage(id)}
+                        className="text-[#565f89] hover:text-[#f7768e] text-xs transition-colors"
+                        title="Remove from view"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div className="flex-1 overflow-hidden">
+                    <ChatView 
+                      agentId={id} 
+                      onTitleUpdate={(title) => handleTitleUpdate(id, title)}
+                      onUnreadReset={() => handleUnreadReset(id)}
+                      isTiled={activeAgentIds.length > 1}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
