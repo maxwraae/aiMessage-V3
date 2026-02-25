@@ -143,188 +143,309 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-[#1a1b26] text-[#a9b1d6]">
+    <div className="flex h-screen bg-[#ececec] text-gray-900 overflow-hidden font-sans">
       {/* Sidebar */}
-      <div className="w-60 flex-shrink-0 bg-[#16161e] border-r border-[#292e42] flex flex-col">
+      <div className="w-[320px] flex-shrink-0 bg-[#f5f5f7] border-r border-[#d1d1d6] flex flex-col z-10">
 
-        {/* Header */}
-        <div className="p-4 border-b border-[#292e42] flex items-center gap-2">
-          {selectedProject && (
-            <button
-              onClick={goBack}
-              className="text-[#565f89] hover:text-[#c0caf5] text-sm leading-none"
-            >
-              ←
-            </button>
-          )}
-          <h1 className="text-sm font-semibold text-[#7aa2f7] tracking-wide truncate">
-            {selectedProject ? selectedProject.name : "aiMessage"}
-          </h1>
-          {selectedProject && (
-            <button
-              onClick={() => startAgent()}
-              disabled={spawning}
-              className="ml-auto text-xs text-[#7aa2f7] hover:text-[#89b4fa] disabled:opacity-50 flex-shrink-0"
-              title="New session"
-            >
-              {spawning ? "…" : "+ New"}
-            </button>
-          )}
+        {/* Header with Mac Controls and Menu */}
+        <div className="pt-4 px-4 pb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]" />
+            <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]" />
+            <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]" />
+          </div>
+          <button className="text-gray-500 hover:text-gray-800 transition-colors">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M3 12h18M3 6h18M3 18h18"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="px-4 pb-3 pt-2">
+          <div className="bg-[#e3e3e8] rounded-lg flex items-center px-2.5 py-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-500 mr-2 flex-shrink-0">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+            </svg>
+            <input 
+              type="text" 
+              placeholder="Search" 
+              className="bg-transparent border-none outline-none text-[13px] w-full text-gray-800 placeholder-gray-500" 
+            />
+          </div>
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto p-2">
-
-          {/* Project list */}
-          {!selectedProject && projects.map((project) => {
-            const count = activeAgentCount(project);
-            return (
-              <div
-                key={project.key}
-                onClick={() => openProject(project)}
-                className="px-3 py-2.5 rounded-lg cursor-pointer flex items-center justify-between mb-0.5 hover:bg-[#1f2335]"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-[#c0caf5] truncate">{project.name}</div>
-                  <div className="text-xs text-[#565f89] mt-0.5">
-                    {project.sessionCount} session{project.sessionCount !== 1 ? "s" : ""}
-                  </div>
-                </div>
-                {count > 0 && (
-                  <span className="ml-2 flex-shrink-0 text-xs bg-[#7aa2f7] text-[#1a1b26] font-semibold rounded-full w-5 h-5 flex items-center justify-center">
-                    {count}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Agent list (inside a project) */}
-          {selectedProject && (
-            <>
-              {projectAgents.map((agent) => {
-                const isSelected = activeAgentIds.includes(agent.id);
-                return (
+        <div className="flex-1 overflow-y-auto bg-white rounded-tl-xl border-t border-[#d1d1d6]">
+          <div className="pt-2">
+            {projects.map((project) => {
+              const count = activeAgentCount(project);
+              const isExpanded = selectedProject?.key === project.key;
+              
+              return (
+                <div key={project.key} className="flex flex-col">
+                  {/* Project Header as a list item if not expanded, or as a section header if we want */}
                   <div
-                    key={agent.id}
-                    onClick={() => toggleAgentOnStage(agent.id)}
-                    className={`px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 group flex items-center justify-between transition-colors ${
-                      isSelected ? "bg-[#292e42]" : "hover:bg-[#1f2335]"
+                    onClick={() => isExpanded ? goBack() : openProject(project)}
+                    className={`flex items-center px-4 py-2 cursor-pointer transition-colors ${
+                      isExpanded ? "bg-gray-50" : "hover:bg-gray-50"
                     }`}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-[#7aa2f7] truncate flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                          agent.agentStatus === "thinking" ? "bg-[#e0af68] animate-pulse" : 
-                          agent.agentStatus === "error" ? "bg-[#f7768e]" : "bg-[#9ece6a]"
-                        }`} />
-                        {agent.title}
-                      </div>
+                    <div className="w-3 flex-shrink-0 flex justify-center">
+                      <svg 
+                        width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+                        className={`text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                      >
+                        <path d="m9 18 6-6-6-6"/>
+                      </svg>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {/* Split View Toggle Icon */}
-                      {!isSelected && activeAgentIds.length > 0 && activeAgentIds.length < 4 && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleAgentOnStage(agent.id, true); }}
-                          className="p-1 rounded text-[#565f89] hover:text-[#7aa2f7] hover:bg-[#16161e] opacity-0 group-hover:opacity-100 transition-all"
-                          title="Add to split view"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18M3 12h18"/>
-                          </svg>
-                        </button>
-                      )}
-                      
-                      {agent.unreadCount > 0 && (
-                        <span className="flex-shrink-0 text-[10px] bg-[#f7768e] text-[#1a1b26] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-                          {agent.unreadCount}
+                    <div className="flex-1 min-w-0 ml-3 flex items-center justify-between">
+                      <span className="font-semibold text-[14px] text-gray-800 truncate">{project.name}</span>
+                      {count > 0 && (
+                        <span className="flex-shrink-0 text-[11px] bg-gray-200 text-gray-600 font-bold rounded-full px-2 py-0.5">
+                          {count} Active
                         </span>
                       )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); killAgent(agent); }}
-                        className="p-1 rounded text-[#565f89] hover:text-[#f7768e] hover:bg-[#16161e] opacity-0 group-hover:opacity-100"
-                      >
-                        ✕
-                      </button>
                     </div>
                   </div>
-                );
-              })}
 
-              <div className="h-4" />
-              <div className="px-3 py-1 text-[10px] text-[#565f89] uppercase tracking-wider font-semibold">History</div>
+                  {isExpanded && (
+                    <div className="flex flex-col">
+                      {/* Active Agents */}
+                      {projectAgents.map((agent, idx) => {
+                        const isSelected = activeAgentIds.includes(agent.id);
+                        const initials = (agent.title || "?").substring(0, 2).toUpperCase();
+                        
+                        return (
+                          <div
+                            key={agent.id}
+                            onClick={() => toggleAgentOnStage(agent.id)}
+                            className={`flex items-center cursor-pointer group ${
+                              isSelected ? "bg-[#3478F6] text-white rounded-xl mx-2 my-1 shadow-sm" : "hover:bg-gray-50 mx-0 my-0"
+                            }`}
+                          >
+                            <div className={`w-4 flex-shrink-0 flex justify-center ${isSelected ? 'ml-2' : 'ml-2'}`}>
+                              {agent.unreadCount > 0 ? (
+                                <div className="w-2.5 h-2.5 bg-[#3478F6] rounded-full" />
+                              ) : (
+                                <div className={`w-2.5 h-2.5 rounded-full ${
+                                  agent.agentStatus === "thinking" ? "bg-amber-400 animate-pulse" : 
+                                  agent.agentStatus === "error" ? "bg-red-500" : "bg-green-500"
+                                }`} />
+                              )}
+                            </div>
+                            
+                            <div className={`w-11 h-11 rounded-full flex items-center justify-center text-[17px] font-medium flex-shrink-0 mx-2 ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-[#a3b1c6] text-white'
+                            }`}>
+                              {initials}
+                            </div>
+                            
+                            <div className={`flex-1 min-w-0 flex flex-col justify-center py-3 pr-4 border-b ${
+                              isSelected || idx === projectAgents.length - 1 ? 'border-transparent' : 'border-gray-200'
+                            }`}>
+                              <div className="flex justify-between items-baseline mb-0.5">
+                                <span className={`font-semibold text-[15px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                  {agent.title}
+                                </span>
+                                <div className="relative flex-shrink-0 ml-2 h-5 flex items-center min-w-[50px] justify-end">
+                                  <span className={`text-[13px] transition-opacity duration-200 group-hover:opacity-0 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                                    Now
+                                  </span>
+                                  <div className="absolute right-0 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); killAgent(agent); }}
+                                      className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:brightness-90 flex items-center justify-center group/btn"
+                                      title="Close Session"
+                                    >
+                                      <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="text-black opacity-0 group-hover/btn:opacity-100">
+                                        <path d="M18 6 6 18M6 6l12 12"/>
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        isSelected ? removeFromStage(agent.id) : toggleAgentOnStage(agent.id); 
+                                      }}
+                                      className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:brightness-90 flex items-center justify-center group/btn"
+                                      title={isSelected ? "Minimize (Remove from view)" : "Show in view"}
+                                    >
+                                      <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="text-black opacity-0 group-hover/btn:opacity-100">
+                                        {isSelected ? <path d="M5 12h14"/> : <path d="M12 5v14M5 12h14"/>}
+                                      </svg>
+                                    </button>
+                                    {!isSelected && activeAgentIds.length < 4 && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); toggleAgentOnStage(agent.id, true); }}
+                                        className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:brightness-90 flex items-center justify-center group/btn"
+                                        title="Add to split view"
+                                      >
+                                        <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="text-black opacity-0 group-hover/btn:opacity-100">
+                                          <path d="M12 5v14M5 12h14"/>
+                                        </svg>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[14px] truncate ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>
+                                  {agent.agentStatus === "thinking" ? "Typing..." : "Active session"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
 
-              {/* Past sessions */}
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="px-3 py-2 rounded-lg mb-0.5 hover:bg-[#1f2335] cursor-pointer group flex items-center justify-between"
-                  onClick={() => startAgent(session.id)}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm text-[#c0caf5] truncate group-hover:text-[#7aa2f7] transition-colors">
-                      {session.title ?? session.id.slice(0, 8)}
+                      {/* New Session Action */}
+                      <div className="px-14 py-2 border-b border-gray-200">
+                         <button
+                          onClick={() => startAgent()}
+                          disabled={spawning}
+                          className="text-[14px] text-[#3478F6] hover:text-[#2a62cc] font-medium transition-colors disabled:opacity-50"
+                        >
+                          + New Session
+                        </button>
+                      </div>
+
+                      {/* Past Sessions */}
+                      {sessions.map((session, idx) => {
+                        const isSelected = activeAgentIds.includes(session.id); // Typically not selected unless resumed, but good to check
+                        const initials = (session.title || "?").substring(0, 2).toUpperCase();
+                        
+                        // Parse timestamp for "Yesterday", "Monday", etc.
+                        const date = new Date(session.modified);
+                        const today = new Date();
+                        const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+                        const timestampStr = isToday ? date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : date.toLocaleDateString([], {weekday: 'short'});
+
+                        return (
+                          <div
+                            key={session.id}
+                            onClick={() => startAgent(session.id)}
+                            className={`flex items-center cursor-pointer group ${
+                              isSelected ? "bg-[#3478F6] text-white rounded-xl mx-2 my-1 shadow-sm" : "hover:bg-gray-50 mx-0 my-0"
+                            }`}
+                          >
+                            <div className="w-4 flex-shrink-0 ml-2" /> {/* Spacer for unread dot area */}
+                            
+                            <div className={`w-11 h-11 rounded-full flex items-center justify-center text-[17px] font-medium flex-shrink-0 mx-2 ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-[#a3b1c6] text-white'
+                            }`}>
+                              {initials}
+                            </div>
+                            
+                            <div className={`flex-1 min-w-0 flex flex-col justify-center py-3 pr-4 border-b ${
+                              isSelected || idx === sessions.length - 1 ? 'border-transparent' : 'border-gray-200'
+                            }`}>
+                              <div className="flex justify-between items-baseline mb-0.5">
+                                <span className={`font-semibold text-[15px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                  {session.title ?? session.id.slice(0, 8)}
+                                </span>
+                                <div className="relative flex-shrink-0 ml-2 h-5 flex items-center min-w-[50px] justify-end">
+                                  <span className={`text-[13px] transition-opacity duration-200 group-hover:opacity-0 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                                    {timestampStr}
+                                  </span>
+                                  <div className="absolute right-0 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); /* Implement delete logic if available, for now just a UI stub */ }}
+                                      className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:brightness-90 flex items-center justify-center group/btn"
+                                      title="Delete Session"
+                                    >
+                                      <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="text-black opacity-0 group-hover/btn:opacity-100">
+                                        <path d="M18 6 6 18M6 6l12 12"/>
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); startAgent(session.id); }}
+                                      className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:brightness-90 flex items-center justify-center group/btn"
+                                      title="Resume Session"
+                                    >
+                                      <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="text-black opacity-0 group-hover/btn:opacity-100">
+                                        <path d="M5 12h14"/>
+                                      </svg>
+                                    </button>
+                                    {activeAgentIds.length < 4 && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }}
+                                        className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:brightness-90 flex items-center justify-center group/btn"
+                                        title="Resume in split view"
+                                      >
+                                        <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="text-black opacity-0 group-hover/btn:opacity-100">
+                                          <path d="M12 5v14M5 12h14"/>
+                                        </svg>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[14px] truncate ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>
+                                  {session.preview || "No messages yet"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                  
-                  {/* Split View Icon for History */}
-                  {activeAgentIds.length > 0 && activeAgentIds.length < 4 && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }}
-                      className="p-1 rounded text-[#565f89] hover:text-[#7aa2f7] hover:bg-[#16161e] opacity-0 group-hover:opacity-100 transition-all"
-                      title="Resume in split view"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18M3 12h18"/>
-                      </svg>
-                    </button>
                   )}
                 </div>
-              ))}
+              );
+            })}
 
-              {sessions.length === 0 && projectAgents.length === 0 && (
-                <div className="px-3 py-2 text-xs text-[#565f89]">No sessions yet</div>
-              )}
-            </>
-          )}
-
-          {!selectedProject && projects.length === 0 && (
-            <div className="px-3 py-2 text-xs text-[#565f89]">Loading…</div>
-          )}
+            {projects.length === 0 && (
+              <div className="px-4 py-8 text-center text-[14px] text-gray-400">Loading…</div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Main area - The Stage */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative bg-white">
         {activeAgentIds.length > 0 ? (
-          <div className={`flex-1 grid gap-px bg-[#292e42] ${getGridClass(activeAgentIds.length)}`}>
+          <div className={`flex-1 grid gap-px bg-gray-200 ${getGridClass(activeAgentIds.length)}`}>
             {activeAgentIds.map((id, index) => {
               const agent = agents.find(a => a.id === id);
-              // In mobile (fallback), we only show the last active chat
               const isHiddenOnMobile = index !== activeAgentIds.length - 1;
               
               return (
                 <div 
                   key={id} 
-                  className={`bg-[#1a1b26] flex flex-col overflow-hidden relative ${isHiddenOnMobile ? "hidden lg:flex" : "flex"} ${
+                  className={`bg-white flex flex-col overflow-hidden relative ${isHiddenOnMobile ? "hidden lg:flex" : "flex"} ${
                     activeAgentIds.length === 3 && index === 0 ? "lg:row-span-2" : ""
                   }`}
                 >
                   {/* Tile Header */}
-                  {activeAgentIds.length > 1 && (
-                    <div className="h-8 flex-shrink-0 bg-[#16161e] border-b border-[#292e42] flex items-center px-3 justify-between">
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-[#565f89] truncate">
-                        {agent?.title || "Loading..."}
-                      </span>
-                      <button 
-                        onClick={() => removeFromStage(id)}
-                        className="text-[#565f89] hover:text-[#f7768e] text-xs transition-colors"
-                        title="Remove from view"
+                  <div className="h-12 flex-shrink-0 bg-gray-50 border-b border-gray-200 flex items-center px-4 justify-between group/header">
+                    <span className="text-[12px] uppercase tracking-wider font-bold text-gray-500 truncate">
+                      {agent?.title || "Loading..."}
+                    </span>
+                    <div className="flex items-center gap-2 opacity-50 group-hover/header:opacity-100 transition-opacity">
+                      {agent && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); killAgent(agent); }}
+                          className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:brightness-90 flex items-center justify-center group/btn"
+                          title="Close Session"
+                        >
+                          <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="text-black opacity-0 group-hover/btn:opacity-100">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeFromStage(id); }}
+                        className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:brightness-90 flex items-center justify-center group/btn"
+                        title="Minimize (Remove from view)"
                       >
-                        ✕
+                        <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="text-black opacity-0 group-hover/btn:opacity-100">
+                          <path d="M5 12h14"/>
+                        </svg>
                       </button>
+                      {/* Green button hidden because chat is already open on stage */}
                     </div>
-                  )}
+                  </div>
                   
                   <div className="flex-1 overflow-hidden">
                     <ChatView 
@@ -339,9 +460,14 @@ export default function App() {
             })}
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <span className="text-sm text-[#565f89]">
-              {selectedProject ? "Start a new agent or select one" : "Select a project"}
+          <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 rounded-3xl bg-gray-100 flex items-center justify-center text-gray-300">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <span className="text-[15px] text-gray-400 font-medium">
+              {selectedProject ? "Start a new session or select one" : "Select a project to begin"}
             </span>
           </div>
         )}

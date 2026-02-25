@@ -16,31 +16,31 @@ function ToolCallItem({ item, isTiled }: ToolCallItemProps) {
     item.status === "completed" ? "✓" : "✗";
 
   const statusColor =
-    item.status === "running" ? "text-[#e0af68]" :
-    item.status === "completed" ? "text-[#9ece6a]" : "text-[#f7768e]";
+    item.status === "running" ? "text-amber-500" :
+    item.status === "completed" ? "text-green-500" : "text-red-500";
 
   return (
     <div className={isTiled ? "my-0.5" : "my-1"}>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className={`flex items-center gap-2 text-[#565f89] hover:text-[#a9b1d6] transition-colors ${isTiled ? "text-[10px]" : "text-xs"}`}
+        className={`flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors ${isTiled ? "text-[10px]" : "text-xs"}`}
       >
-        <span className={`font-mono ${statusColor}`}>{statusIcon}</span>
-        <span className="font-medium">{item.name}</span>
+        <span className={`font-mono font-bold ${statusColor}`}>{statusIcon}</span>
+        <span className="font-semibold">{item.name}</span>
         <span className="opacity-50">{expanded ? "▲" : "▼"}</span>
       </button>
       {expanded && (
-        <div className={`mt-1 ml-2 rounded-md bg-[#16161e] border border-[#292e42] overflow-hidden ${isTiled ? "ml-2" : "ml-4"}`}>
-          <div className="px-2 py-1.5 border-b border-[#292e42]">
-            <div className="text-[9px] text-[#565f89] uppercase tracking-wide mb-0.5">Input</div>
-            <pre className={`whitespace-pre-wrap break-all font-mono ${isTiled ? "text-[10px]" : "text-xs text-[#a9b1d6]"}`}>
+        <div className="mt-1 rounded-lg bg-gray-50 border border-gray-200 overflow-hidden shadow-sm">
+          <div className="px-2 py-1.5 border-b border-gray-200">
+            <div className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">Input</div>
+            <pre className={`whitespace-pre-wrap break-all font-mono text-gray-700 ${isTiled ? "text-[10px]" : "text-xs"}`}>
               {JSON.stringify(item.input, null, 2)}
             </pre>
           </div>
           {item.result !== undefined && (
             <div className="px-2 py-1.5">
-              <div className="text-[9px] text-[#565f89] uppercase tracking-wide mb-0.5">Output</div>
-              <pre className={`whitespace-pre-wrap break-all font-mono max-h-32 overflow-y-auto ${isTiled ? "text-[10px]" : "text-xs text-[#a9b1d6]"}`}>
+              <div className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">Output</div>
+              <pre className={`whitespace-pre-wrap break-all font-mono max-h-32 overflow-y-auto text-gray-700 ${isTiled ? "text-[10px]" : "text-xs"}`}>
                 {typeof item.result === "string"
                   ? item.result
                   : JSON.stringify(item.result, null, 2)}
@@ -65,83 +65,119 @@ function ThoughtItem({ item, isTiled }: ThoughtItemProps) {
     <div className={isTiled ? "my-0.5" : "my-1"}>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className={`flex items-center gap-2 text-[#414868] hover:text-[#565f89] transition-colors italic ${isTiled ? "text-[10px]" : "text-xs"}`}
+        className={`flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors italic ${isTiled ? "text-[10px]" : "text-xs"}`}
       >
         <span>💭</span>
         <span>{expanded ? "Hide thinking" : "Show thinking"}</span>
         <span className="opacity-50">{expanded ? "▲" : "▼"}</span>
       </button>
       {expanded && (
-        <div className={`mt-1 px-2 py-1.5 rounded-md bg-[#16161e] border border-[#1f2335] ${isTiled ? "ml-2" : "ml-4"}`}>
-          <p className={`text-[#414868] italic whitespace-pre-wrap ${isTiled ? "text-[10px]" : "text-xs"}`}>{item.text}</p>
+        <div className="mt-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100 shadow-inner">
+          <p className={`text-gray-500 italic whitespace-pre-wrap leading-relaxed ${isTiled ? "text-[10px]" : "text-xs"}`}>{item.text}</p>
         </div>
       )}
     </div>
   );
 }
 
-function MessageBubble({ item, isTiled }: { item: StreamItem; isTiled?: boolean }) {
-  if (item.kind === "user_message") {
+type MessageGroup = {
+  kind: "user" | "agent" | "system" | "tool" | "thought" | "error";
+  items: StreamItem[];
+  timestamp: string;
+};
+
+function groupMessages(items: StreamItem[]): MessageGroup[] {
+  const groups: MessageGroup[] = [];
+  let currentGroup: MessageGroup | null = null;
+
+  items.forEach((item) => {
+    let kind: MessageGroup["kind"] = "agent";
+    if (item.kind === "user_message") kind = "user";
+    else if (item.kind === "system") kind = "system";
+    else if (item.kind === "tool_call") kind = "tool";
+    else if (item.kind === "thought") kind = "thought";
+    else if (item.kind === "error") kind = "error";
+
+    // Assistant messages and text deltas are both "agent"
+    if (item.kind === "assistant_message" || item.kind === "text_delta") kind = "agent";
+
+    const canGroup = currentGroup && 
+      currentGroup.kind === kind && 
+      (kind === "user" || kind === "agent");
+
+    if (canGroup) {
+      currentGroup!.items.push(item);
+    } else {
+      currentGroup = {
+        kind,
+        items: [item],
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      groups.push(currentGroup);
+    }
+  });
+
+  return groups;
+}
+
+function MessageBubble({ item, group, index, total }: { item: StreamItem; group: MessageGroup; index: number; total: number }) {
+  if (group.kind === "user") {
+    const text = (item as any).text || "";
+    let radiusClass = "bubble-user-single bubble-tail";
+    if (total > 1) {
+      if (index === 0) radiusClass = "bubble-user-top";
+      else if (index === total - 1) radiusClass = "bubble-user-bottom bubble-tail";
+      else radiusClass = "bubble-user-middle";
+    }
+
     return (
-      <div className={`flex justify-end ${isTiled ? "mb-2" : "mb-3"}`}>
-        <div className={`rounded-2xl rounded-tr-sm bg-[#3d59a1] text-[#c0caf5] ${isTiled ? "max-w-[90%] px-3 py-1.5" : "max-w-[75%] px-4 py-2.5"}`}>
-          <p className={`whitespace-pre-wrap break-words ${isTiled ? "text-xs" : "text-sm"}`}>{item.text}</p>
+      <div className="flex justify-end mb-1">
+        <div className={`glass-bubble-user text-white px-4 py-2 shadow-sm ${radiusClass} max-w-[75%]`}>
+          <p className="text-[15px] leading-snug whitespace-pre-wrap break-words font-sans">{text}</p>
         </div>
       </div>
     );
   }
 
-  if (item.kind === "assistant_message") {
+  if (group.kind === "agent") {
+    const text = (item as any).text || "";
     return (
-      <div className={`flex justify-start ${isTiled ? "mb-2" : "mb-3"}`}>
-        <div className={`rounded-2xl rounded-tl-sm bg-[#1f2335] text-[#a9b1d6] ${isTiled ? "max-w-[95%] px-3 py-1.5" : "max-w-[85%] px-4 py-2.5"}`}>
-          <p className={`whitespace-pre-wrap break-words ${isTiled ? "text-xs" : "text-sm"}`}>{item.text}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (item.kind === "text_delta") {
-    return (
-      <div className="flex justify-start mb-1">
-        <div className={`rounded-2xl bg-[#1f2335]/50 text-[#a9b1d6] border border-[#292e42]/30 ${isTiled ? "max-w-[95%] px-3 py-1" : "max-w-[85%] px-4 py-2"}`}>
-          <p className={`whitespace-pre-wrap break-words ${isTiled ? "text-xs" : "text-sm"}`}>{item.text}</p>
+      <div className="flex flex-col mb-6 group/agent">
+        {index === 0 && (
+          <div className="flex items-center mb-2">
+            <span className="text-[13px] font-bold text-gray-500 uppercase tracking-tight truncate flex-1">Agent Response</span>
+          </div>
+        )}
+        <div className="max-w-full">
+          <p className="text-[16px] leading-relaxed text-gray-900 whitespace-pre-wrap break-words font-sans">{text}</p>
         </div>
       </div>
     );
   }
 
   if (item.kind === "thought") {
-    return (
-      <div className={`${isTiled ? "mb-1" : "mb-2"} px-1`}>
-        <ThoughtItem item={item} isTiled={isTiled} />
-      </div>
-    );
+    return <div className="mb-2"><ThoughtItem item={item} /></div>;
   }
 
   if (item.kind === "tool_call") {
-    return (
-      <div className={`${isTiled ? "mb-1" : "mb-1.5"} px-1`}>
-        <ToolCallItem item={item} isTiled={isTiled} />
-      </div>
-    );
+    return <div className="mb-2"><ToolCallItem item={item} /></div>;
   }
 
   if (item.kind === "system") {
     return (
-      <div className={`my-1 px-2 py-1 rounded bg-[#16161e] border-l-2 border-[#565f89] ${isTiled ? "opacity-50" : "opacity-70"}`}>
-        <p className={`font-mono text-[#565f89] whitespace-pre-wrap break-all ${isTiled ? "text-[9px]" : "text-[10px]"}`}>
+      <div className="flex justify-center my-4">
+        <span className="text-[11px] text-gray-500 uppercase tracking-[0.2em] font-bold px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
           {item.text}
-        </p>
+        </span>
       </div>
     );
   }
 
   if (item.kind === "error") {
     return (
-      <div className={`flex justify-start ${isTiled ? "mb-2" : "mb-3"}`}>
-        <div className={`rounded-lg bg-[#2d1b21] border border-[#f7768e]/30 text-[#f7768e] ${isTiled ? "max-w-[95%] px-3 py-1.5" : "max-w-[85%] px-4 py-2.5"}`}>
-          <p className="text-xs whitespace-pre-wrap break-words">{item.text}</p>
+      <div className="flex justify-center my-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-xl text-xs font-medium">
+          {item.text}
         </div>
       </div>
     );
@@ -234,26 +270,41 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, isTile
   const isThinking = status === "thinking";
   const canSend = input.trim().length > 0 && status !== "thinking" && status !== "connecting";
 
+  const messageGroups = groupMessages(items);
+
   return (
-    <div className="flex flex-col h-full bg-[#1a1b26]">
+    <div className="flex flex-col h-full bg-transparent">
       {/* Messages */}
-      <div className={`flex-1 overflow-y-auto ${isTiled ? "px-2 py-2" : "px-4 py-4"}`}>
-        {items.length === 0 && status !== "connecting" && (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-sm text-[#414868]">Send a message to start</p>
+      <div className={`flex-1 overflow-y-auto ${isTiled ? "px-4 py-4" : "px-8 py-8"} space-y-6`}>
+        {messageGroups.length === 0 && status !== "connecting" && (
+          <div className="flex flex-col items-center justify-center h-full space-y-4 opacity-20">
+            <div className="w-12 h-12 rounded-full border-2 border-dashed border-white flex items-center justify-center">
+              <span className="text-xl">✨</span>
+            </div>
+            <p className="text-sm font-medium tracking-wide">NEW CONVERSATION</p>
           </div>
         )}
-        {items.map((item, idx) => (
-          <MessageBubble key={item.id + idx} item={item} isTiled={isTiled} />
+        
+        {messageGroups.map((group, gIdx) => (
+          <div key={gIdx} className="space-y-1">
+            {group.items.map((item, iIdx) => (
+              <MessageBubble 
+                key={item.id + iIdx} 
+                item={item} 
+                group={group} 
+                index={iIdx} 
+                total={group.items.length} 
+              />
+            ))}
+          </div>
         ))}
+
         {isThinking && (
-          <div className={`flex justify-start ${isTiled ? "mb-2" : "mb-3"}`}>
-            <div className={`rounded-2xl rounded-tl-sm bg-[#1f2335] ${isTiled ? "px-3 py-1.5" : "px-4 py-2.5"}`}>
-              <div className="flex gap-1 items-center h-4">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#565f89] animate-bounce [animation-delay:0ms]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#565f89] animate-bounce [animation-delay:150ms]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#565f89] animate-bounce [animation-delay:300ms]" />
-              </div>
+          <div className="flex justify-start items-center ml-2 mb-4">
+            <div className="flex gap-1 px-2 py-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce [animation-delay:-0.3s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.15s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" />
             </div>
           </div>
         )}
@@ -261,37 +312,42 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, isTile
       </div>
 
       {/* Input bar */}
-      <div className={`flex-shrink-0 border-t border-[#292e42] bg-[#16161e] ${isTiled ? "px-2 py-2" : "px-4 py-3"}`}>
-        <div className="flex items-end gap-2">
+      <div className={`flex-shrink-0 ${isTiled ? "p-4" : "p-6"}`}>
+        <div className="glass-input rounded-[28px] p-1 flex items-end shadow-sm bg-white border border-gray-300">
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isTiled ? "Reply..." : "Message Claude…"}
+            placeholder={isTiled ? "Reply..." : "iMessage"}
             rows={1}
             disabled={status === "connecting" || status === "error"}
-            className={`flex-1 resize-none bg-[#1f2335] border border-[#292e42] rounded-xl text-[#c0caf5] placeholder-[#414868] focus:outline-none focus:border-[#3d59a1] transition-colors max-h-36 overflow-y-auto disabled:opacity-40 ${
-              isTiled ? "px-3 py-1.5 text-xs" : "px-4 py-2.5 text-sm"
+            className={`flex-1 resize-none bg-transparent border-none text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 transition-all max-h-48 overflow-y-auto disabled:opacity-40 py-2.5 ${
+              isTiled ? "px-4 text-[14px]" : "px-5 text-[16px]"
             }`}
             style={{ fieldSizing: "content" } as React.CSSProperties}
           />
           <button
             onClick={sendUserMessage}
-            disabled={!canSend}
-            className={`flex-shrink-0 rounded-xl bg-[#3d59a1] text-[#c0caf5] flex items-center justify-center hover:bg-[#4a6dbf] disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${
-              isTiled ? "w-7 h-7" : "w-9 h-9"
+            disabled={!canSend && input.trim().length > 0}
+            className={`flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-300 ease-out mb-1 mr-1 ${
+              input.trim().length > 0 
+                ? "w-8 h-8 bg-[#007AFF] text-white scale-100 opacity-100 shadow-md shadow-[#007AFF]/20" 
+                : "w-8 h-8 bg-gray-100 text-gray-400 scale-90 opacity-100"
             }`}
             aria-label="Send"
           >
-            <svg width={isTiled ? "10" : "14"} height={isTiled ? "10" : "14"} viewBox="0 0 14 14" fill="none">
-              <path d="M7 1L13 7L7 13M13 7H1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            {input.trim().length > 0 ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/><path d="M8 23h8"/>
+              </svg>
+            )}
           </button>
         </div>
-        {status === "error" && !isTiled && (
-          <p className="text-xs text-[#f7768e] mt-1.5">Connection lost</p>
-        )}
       </div>
     </div>
   );
