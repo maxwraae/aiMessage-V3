@@ -1,106 +1,65 @@
-# aiMessage V3
+# aiMessage V3: Pure Data Architecture
 
-A web-based terminal that connects to tmux sessions on your Mac, accessible from any device over Tailscale. Built to monitor and interact with AI coding agents (Claude Code, Codex, OpenCode) from your phone.
-
-V3 is a ground-up rebuild of the foundation. Same product concept as V2, new body: single process, web-only, no Expo, no monorepo.
+aiMessage V3 is a "Headless" UI wrapper around **Claude Code**. It transforms the Claude CLI from a terminal application into a structured data engine, allowing for a modern, multi-agent chat interface.
 
 ---
 
-## What It Is
+## 🏗 The Architecture: "Pure Data, No Bullshit"
 
-- Open a browser on your phone → see a live terminal running on your Mac
-- Terminal connects to a persistent tmux session — close the tab, the session keeps running
-- Access is over Tailscale. No auth layer needed at the application level.
+Unlike standard terminal wrappers that use `node-pty`, aiMessage V3 uses Claude Code's **Headless Mode**. This bypasses the ANSI-heavy terminal UI (`Ink`) and creates a pure JSON pipe.
 
-## Stack
+### 1. The Pipe (Stdout/Stdin)
+- **Spawn:** We launch Claude with `-p --input-format stream-json --output-format stream-json`.
+- **Input:** We send Newline Delimited JSON (NDJSON) to `stdin`.
+- **Output:** We parse raw NDJSON from `stdout`, extracting events like `text_delta`, `thought`, and `tool_use`.
+- **System Noise:** `stderr` is captured and rendered as "System" items, ensuring no error or tool warning is silently swallowed.
 
-| Layer | Technology |
-|-------|-----------|
-| Server | Node.js + TypeScript |
-| WebSocket | ws |
-| Terminal sessions | tmux |
-| PTY bridge | node-pty |
-| Terminal rendering | xterm.js (CDN, no build step in Slice 1) |
+### 2. The "One-Shot" Utility (`lib/claude-one-shot.ts`)
+We use a special trick to perform "API-like" tasks (like naming chats or summarizing) using your **Claude Pro Subscription** instead of expensive API credits.
+- **Sterile Mode:** The utility runs `claude -p` from the `/tmp` directory.
+- **Bypass Logic:** By running in `/tmp`, Claude ignores the project's `CLAUDE.md` and `MEMORY.md`, providing a fast, blank-slate response.
+- **Use Case:** Every new chat is automatically named using a background **Haiku** process that analyzes the first 3 messages.
+
+### 3. History Hydration
+When you resume a session, the CLI does not re-print past messages.
+- **Direct Access:** The server locates the project's history in `~/.claude/projects/`.
+- **Pre-Hydration:** We parse the `.jsonl` session log and send it to the frontend *before* the process even starts. This makes "Resuming" feel instantaneous.
+
+### 4. Transparent Noise Filtering (`shared/filter-config.ts`)
+Claude Code generates a lot of "mechanical noise" (e.g., Memory Extraction sidechains).
+- **The Filter:** We maintain a central blacklist of patterns (like "Create these memory entities").
+- **Double-Scrub:** Noise is filtered both from the **Sidebar** (session discovery) and the **Chat Bubbles** (live events).
 
 ---
 
-## How to Run
+## 🚦 Multi-Agent Monitoring
 
-**Requirements:** Node 22 LTS, tmux installed, Tailscale running.
+The system is designed to handle multiple active Claude processes simultaneously.
 
+- **Thinking States:** The sidebar shows an **Amber Pulsing Dot** when an agent is generating text or running a tool.
+- **Unread Badges:** If Claude responds while you are looking at a different chat, a **Red Badge** tracks how many messages you've missed.
+- **Attention Reset:** Clicking a chat automatically clears the unread count on the server.
+
+---
+
+## 🚀 Development
+
+### Tech Stack
+- **Frontend:** React + Vite + Tailwind (Vanilla CSS for components).
+- **Backend:** Node.js + WebSockets (`ws`).
+- **Protocol:** Pure NDJSON proxying.
+
+### Configuration
+If you want to hide new types of machine noise, simply add the pattern to:
+`shared/filter-config.ts`
+
+### Running the App
 ```bash
-# Install dependencies
-npm install
-
-# Start the server
-npx tsx server.ts
+npm run dev   # Starts Vite and the Node server in watch mode
+npm run build # Compiles the project into the /dist folder
+npm start     # Runs the production server
 ```
-
-Open `http://localhost:7777` to verify locally.
-Open `http://<tailscale-ip>:7777` from your phone to use over Tailscale.
-
-The server binds `0.0.0.0:7777`. If you can reach the port via Tailscale, you're in.
 
 ---
 
-## Current Status
-
-**Slice 1: Complete.**
-
-Two files — `server.ts` and `index.html`. The transport layer is proven:
-
-```
-browser (xterm.js) → WebSocket → Node.js (node-pty) → tmux → zsh
-```
-
-Verified:
-- Terminal renders and accepts input
-- Colors, cursor positioning, full TUI apps (htop, vim) work
-- Close tab, reopen: tmux reattaches, session still alive
-- Terminal resizes when browser window resizes
-- Works from iPhone over Tailscale
-
----
-
-## Known Issues / Gotchas
-
-**node-pty binary permissions.** On some npm installs, node-pty's `spawn-helper` binary ships without execute permissions. If you get a permission error on startup, fix with:
-
-```bash
-chmod +x node_modules/node-pty/build/Release/spawn-helper
-```
-
-Add a `postinstall` script to `package.json` to automate this if needed.
-
-**Node 25 breaks node-pty.** Use Node 22 LTS. Pin it with `.nvmrc` or just document it. Node 25 has compatibility issues with node-pty's native bindings.
-
-**tmux path.** Do not hardcode the tmux binary path. The server passes `env: { ...process.env }` to node-pty, which inherits PATH from the shell. This is the correct approach — hardcoded paths break on different machines and shell setups.
-
----
-
-## What's Next
-
-**Slice 2: React Shell**
-
-Replace the single HTML page with a Vite + React + TypeScript + Tailwind app. The server serves the built client as static files. xterm.js moves into a React component. Basic layout: sidebar (agent list) + main area (terminal view).
-
-Same terminal experience as Slice 1, but inside a real app with a layout skeleton.
-
-**Slice 3: Agent Manager** — spawn and manage multiple tmux sessions from the UI.
-
-**Slice 4: Structured Events** — port the V2 parser pipeline. See structured Claude Code output instead of raw terminal.
-
-**Slice 5: Polish and Mobile** — PWA manifest, responsive layout, home screen install.
-
----
-
-## Design Decisions
-
-| Decision | Rationale |
-|----------|-----------|
-| Web only, no Expo | Simpler, faster; Tailscale makes native app unnecessary |
-| Single repo, not monorepo | One process, one build, no package interdependencies |
-| tmux for session persistence | Native, battle-tested; agents survive server restarts |
-| Tailscale for auth | Zero application-level auth needed |
-| Node.js, not Bun | Ecosystem maturity, node-pty compatibility |
-| No database | JSON files on disk, proven sufficient in V2 |
+*This architecture was built to solve the "split-brain" problem of mixing terminal UI with machine-readable data. It treats Claude as a data engine first, and a chat partner second.*

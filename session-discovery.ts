@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import { isNoise } from "./shared/filter-config.js";
 
 export type Project = {
   key: string;
@@ -104,19 +105,6 @@ export function listProjects(): Project[] {
 export function listSessions(projectKey: string): Session[] {
   const dir = path.join(CLAUDE_PROJECTS, projectKey);
 
-  const indexPath = path.join(dir, "sessions-index.json");
-  if (fs.existsSync(indexPath)) {
-    try {
-      const raw = fs.readFileSync(indexPath, "utf-8");
-      const parsed = JSON.parse(raw) as unknown;
-      if (Array.isArray(parsed)) {
-        return parsed as Session[];
-      }
-    } catch {
-      // fall through to scan
-    }
-  }
-
   let files: string[];
   try {
     files = fs.readdirSync(dir).filter((f) => f.endsWith(".jsonl"));
@@ -136,31 +124,64 @@ export function listSessions(projectKey: string): Session[] {
     }
 
     let title: string | null = null;
-    let preview: string | null = null;
+    let isJunk = false;
 
     try {
-      const firstLine = fs.readFileSync(filePath, "utf-8").split("\n")[0];
+      const lines = fs.readFileSync(filePath, "utf-8").split("\n");
+      
+      // RULE 1: Skip sidechains
+      const firstLine = lines[0];
       if (firstLine) {
-        const parsed = JSON.parse(firstLine) as unknown;
-        if (parsed !== null && typeof parsed === "object") {
-          const obj = parsed as Record<string, unknown>;
-          if (obj.isSidechain === true) continue;
-          if (typeof obj.title === "string") title = obj.title;
-          else if (typeof obj.slug === "string") title = obj.slug;
-          if (typeof obj.preview === "string") preview = obj.preview;
-        }
+        try {
+          const parsed = JSON.parse(firstLine) as Record<string, unknown>;
+          if (parsed.isSidechain === true) continue;
+        } catch { /* ignore */ }
       }
+
+      // Scan for title
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const obj = JSON.parse(line) as Record<string, any>;
+          if (obj.type === "user" && obj.message) {
+            const content = obj.message.content;
+            let text = "";
+            if (typeof content === "string") {
+              text = content;
+            } else if (Array.isArray(content)) {
+              text = content.map((b: any) => b.text ?? "").join("").trim();
+            }
+
+            // Centralized Noise Filter
+            if (isNoise(text)) {
+              continue;
+            }
+
+            if (text) {
+              title = text.slice(0, 60) + (text.length > 60 ? "…" : "");
+              break;
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (!title) {
+        isJunk = true;
+      }
+
     } catch {
-      // ignore
+      isJunk = true;
     }
 
-    sessions.push({
-      id: file.replace(/\.jsonl$/, ""),
-      title,
-      preview,
-      created: stat.birthtime,
-      modified: stat.mtime,
-    });
+    if (!isJunk && title) {
+      sessions.push({
+        id: file.replace(/\.jsonl$/, ""),
+        title,
+        preview: null,
+        created: stat.birthtime,
+        modified: stat.mtime,
+      });
+    }
   }
 
   sessions.sort((a, b) => b.modified.getTime() - a.modified.getTime());

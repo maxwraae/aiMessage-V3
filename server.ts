@@ -1,12 +1,10 @@
 import { createServer } from "node:http";
 import type { IncomingMessage } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
-import pty from "node-pty";
 import { listProjects, listSessions } from "./session-discovery.js";
-import { spawnAgent, listAgents, killAgent } from "./agent-manager.js";
 import {
   spawnChatAgent,
   listChatAgents,
@@ -49,7 +47,7 @@ const server = createServer((req, res) => {
 
   if (req.url === "/api/agents" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify([...listAgents(), ...listChatAgents()]));
+    res.end(JSON.stringify(listChatAgents()));
     return;
   }
 
@@ -61,17 +59,10 @@ const server = createServer((req, res) => {
         const payload = JSON.parse(body) as {
           projectPath: string;
           resumeSessionId?: string;
-          type?: "terminal" | "chat";
         };
-        if (payload.type === "chat") {
-          const agent = spawnChatAgent(payload.projectPath);
-          res.writeHead(201, { "Content-Type": "application/json" });
-          res.end(JSON.stringify(agent));
-        } else {
-          const agent = spawnAgent(payload.projectPath, payload.resumeSessionId);
-          res.writeHead(201, { "Content-Type": "application/json" });
-          res.end(JSON.stringify(agent));
-        }
+        const agent = spawnChatAgent(payload.projectPath, payload.resumeSessionId);
+        res.writeHead(201, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(agent));
       } catch (err) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: String(err) }));
@@ -82,11 +73,7 @@ const server = createServer((req, res) => {
 
   if (req.url?.match(/^\/api\/agents\/([^/]+)$/) && req.method === "DELETE") {
     const id = req.url.match(/^\/api\/agents\/([^/]+)$/)![1];
-    if (getChatAgent(id)) {
-      killChatAgent(id);
-    } else {
-      killAgent(id);
-    }
+    killChatAgent(id);
     res.writeHead(204);
     res.end();
     return;
@@ -116,7 +103,7 @@ const server = createServer((req, res) => {
 const wss = new WebSocketServer({ noServer: true });
 
 server.on("upgrade", (req: IncomingMessage, socket, head) => {
-  if (req.url?.startsWith("/ws/")) {
+  if (req.url?.startsWith("/ws/chat/")) {
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
   } else {
     socket.destroy();
@@ -147,56 +134,8 @@ wss.on("connection", (ws, req: IncomingMessage) => {
     });
     return;
   }
-
-  // Terminal WebSocket: /ws/{tmuxSession}
-  const segment = urlPath.slice(4); // strip /ws/
-  const tmuxSession = segment.length > 0 ? segment : "main";
-
-  let ptyProcess: ReturnType<typeof pty.spawn> | null = null;
-
-  try {
-    ptyProcess = pty.spawn("tmux", ["new-session", "-A", "-s", tmuxSession], {
-      name: "xterm-256color",
-      cols: 80,
-      rows: 24,
-      cwd: process.env.HOME,
-      env: { ...process.env },
-    });
-  } catch (err) {
-    console.error("pty.spawn failed:", err);
-    ws.send(`\r\nError: failed to start terminal session: ${err}\r\n`);
-    ws.close();
-    return;
-  }
-
-  ptyProcess.onData((data) => {
-    if (ws.readyState === ws.OPEN) ws.send(data);
-  });
-
-  ptyProcess.onExit(() => {
-    ws.close();
-  });
-
-  ws.on("message", (raw) => {
-    if (!ptyProcess) return;
-    const msg = raw.toString();
-    try {
-      const parsed = JSON.parse(msg);
-      if (parsed.type === "resize" && parsed.cols && parsed.rows) {
-        ptyProcess.resize(parsed.cols, parsed.rows);
-        return;
-      }
-    } catch {
-      // not JSON, treat as terminal input
-    }
-    ptyProcess.write(msg);
-  });
-
-  ws.on("close", () => {
-    if (ptyProcess) ptyProcess.kill();
-  });
 });
 
 server.listen(7777, "0.0.0.0", () => {
-  console.log("aiMessage V3 listening on http://0.0.0.0:7777");
+  console.log("aiMessage V3 (Headless) listening on http://0.0.0.0:7777");
 });

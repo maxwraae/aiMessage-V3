@@ -99,6 +99,16 @@ function MessageBubble({ item }: { item: StreamItem }) {
     );
   }
 
+  if (item.kind === "text_delta") {
+    return (
+      <div className="flex justify-start mb-1">
+        <div className="max-w-[85%] rounded-2xl px-4 py-2 bg-[#1f2335]/50 text-[#a9b1d6] border border-[#292e42]/30">
+          <p className="text-sm whitespace-pre-wrap break-words">{item.text}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (item.kind === "thought") {
     return (
       <div className="mb-2 px-1">
@@ -111,6 +121,16 @@ function MessageBubble({ item }: { item: StreamItem }) {
     return (
       <div className="mb-1.5 px-1">
         <ToolCallItem item={item} />
+      </div>
+    );
+  }
+
+  if (item.kind === "system") {
+    return (
+      <div className="my-2 px-3 py-2 rounded bg-[#16161e] border-l-2 border-[#565f89]">
+        <p className="text-[10px] font-mono text-[#565f89] whitespace-pre-wrap break-all opacity-70">
+          {item.text}
+        </p>
       </div>
     );
   }
@@ -128,9 +148,13 @@ function MessageBubble({ item }: { item: StreamItem }) {
   return null;
 }
 
-type Props = { agentId: string };
+type Props = { 
+  agentId: string;
+  onTitleUpdate?: (title: string) => void;
+  onUnreadReset?: () => void;
+};
 
-export default function ChatView({ agentId }: Props) {
+export default function ChatView({ agentId, onTitleUpdate, onUnreadReset }: Props) {
   const [items, setItems] = useState<StreamItem[]>([]);
   const [status, setStatus] = useState<AgentStatus>("connecting");
   const [input, setInput] = useState("");
@@ -138,9 +162,10 @@ export default function ChatView({ agentId }: Props) {
   const wsRef = useRef<WebSocket | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Deduplicate tool_call updates (same id, updated status/result)
+  // Deduplicate and update items
   const upsertItem = useCallback((item: StreamItem) => {
     setItems((prev) => {
+      // Update tool calls
       if (item.kind === "tool_call") {
         const idx = prev.findIndex((i) => i.kind === "tool_call" && i.id === item.id);
         if (idx !== -1) {
@@ -149,6 +174,9 @@ export default function ChatView({ agentId }: Props) {
           return next;
         }
       }
+      
+      // Merge consecutive text deltas if they share the same ID (unlikely but possible)
+      // Or just append
       return [...prev, item];
     });
   }, []);
@@ -168,6 +196,10 @@ export default function ChatView({ agentId }: Props) {
           upsertItem(msg.item);
         } else if (msg.type === "agent_status") {
           setStatus(msg.status);
+        } else if (msg.type === "chat_title_update") {
+          onTitleUpdate?.(msg.title);
+        } else if (msg.type === "unread_cleared") {
+          onUnreadReset?.();
         }
       } catch { /* ignore */ }
     };
@@ -206,7 +238,7 @@ export default function ChatView({ agentId }: Props) {
   const canSend = input.trim().length > 0 && status !== "thinking" && status !== "connecting";
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#1a1b26]">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {items.length === 0 && status !== "connecting" && (
@@ -214,8 +246,8 @@ export default function ChatView({ agentId }: Props) {
             <p className="text-sm text-[#414868]">Send a message to start</p>
           </div>
         )}
-        {items.map((item) => (
-          <MessageBubble key={item.id} item={item} />
+        {items.map((item, idx) => (
+          <MessageBubble key={item.id + idx} item={item} />
         ))}
         {isThinking && (
           <div className="flex justify-start mb-3">
