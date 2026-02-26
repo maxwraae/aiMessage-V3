@@ -1,3 +1,18 @@
 node_modules/
 dist/
 *.js.map
+
+# Debug & Local Data
+debug/
+server.log
+.claude/
+models/
+venv/
+
+# Environment & Secrets
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db

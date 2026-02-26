@@ -7,6 +7,7 @@
     "dev:client": "vite",
     "build": "vite build",
     "start": "tsx server.ts",
+    "setup:voice": "tsx scripts/setup-parakeet.ts",
     "postinstall": "chmod +x node_modules/node-pty/prebuilds/*/spawn-helper"
   },
   "dependencies": {

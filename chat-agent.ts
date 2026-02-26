@@ -1,5 +1,4 @@
 import { spawn, ChildProcess } from "node:child_process";
-import { execSync } from "node:child_process";
 import * as readline from "node:readline";
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
@@ -15,8 +14,10 @@ export type ChatAgent = {
   type: "chat";
   title: string;
   projectPath: string;
+  model?: string;
+  sessionId?: string;
   status: "running" | "stopped";
-  agentStatus: "idle" | "thinking" | "done" | "error";
+  agentStatus: "idle" | "thinking" | "done" | "error" | "nudge";
   unreadCount: number;
   startedAt: string;
 };
@@ -35,9 +36,7 @@ const entries = new Map<string, AgentEntry>();
 const CLAUDE_BINARY = "/Users/maxwraae/.local/bin/claude";
 
 function emit(entry: AgentEntry, msg: ChatWsServerMessage) {
-  // If it's a new stream item and we have no viewers, increment unread count
   if (msg.type === "stream_item" && entry.subscribers.size === 0) {
-    // Only count meaningful things as unread (not thoughts)
     if (msg.item.kind !== "thought") {
       entry.agent.unreadCount++;
     }
@@ -101,6 +100,8 @@ function parseClaudeEvent(line: string, entry: AgentEntry) {
 
   if (event.type === "system" && event.subtype === "init" && event.session_id) {
     entry.sessionId = event.session_id;
+    entry.agent.sessionId = event.session_id;
+    emit(entry, { type: "agent_status", status: "idle" });
     return;
   }
 
@@ -127,6 +128,12 @@ function parseClaudeEvent(line: string, entry: AgentEntry) {
           status: "ready",
         };
       } else if (block.type === "tool_use") {
+        if (block.name === "send_notification") {
+          entry.agent.agentStatus = "nudge";
+          emit(entry, { type: "agent_status", status: "nudge" });
+          console.log(`[Nudge] Agent ${entry.agent.id} requested attention: ${block.input?.message}`);
+        }
+
         item = {
           kind: "tool_call",
           name: block.name,
@@ -153,8 +160,10 @@ function parseClaudeEvent(line: string, entry: AgentEntry) {
       emit(entry, { type: "stream_item", item: existing });
     }
   } else if (event.type === "result" && event.subtype === "success") {
-    entry.agent.agentStatus = "idle";
-    emit(entry, { type: "agent_status", status: "idle" });
+    if (entry.agent.agentStatus !== "nudge") {
+      entry.agent.agentStatus = "idle";
+      emit(entry, { type: "agent_status", status: "idle" });
+    }
     
     if (!entry.isSmartNamed && entry.history.length >= 2) {
       triggerSmartNaming(entry);
@@ -256,10 +265,7 @@ function loadSessionHistory(projectPath: string, sessionId: string): StreamItem[
   return items;
 }
 
-export function spawnChatAgent(projectPath: string, resumeSessionId?: string): ChatAgent {
-  const id = crypto.randomBytes(3).toString("hex");
-  const absolutePath = path.resolve(projectPath);
-
+function startAgentProcess(entry: AgentEntry) {
   const env = { ...process.env } as Record<string, string | undefined>;
   delete env.CLAUDECODE;
   delete env.CLAUDE_CODE;
@@ -272,42 +278,21 @@ export function spawnChatAgent(projectPath: string, resumeSessionId?: string): C
     "--dangerously-skip-permissions",
     "--include-partial-messages"
   ];
-  if (resumeSessionId) {
-    args.push("--resume", resumeSessionId);
-  }
+  if (entry.sessionId) args.push("--resume", entry.sessionId);
+  if (entry.agent.model) args.push("--model", entry.agent.model);
 
   const proc = spawn(
     CLAUDE_BINARY,
     args,
     {
-      cwd: absolutePath,
+      cwd: entry.agent.projectPath,
       env: env as NodeJS.ProcessEnv,
       stdio: ["pipe", "pipe", "pipe"],
     }
   );
 
-  const title = resumeSessionId 
-    ? (extractTitleFromHistory(absolutePath, resumeSessionId) || "Resumed Chat")
-    : "New Chat";
-
-  const entry: AgentEntry = {
-    agent: {
-      id,
-      type: "chat",
-      title,
-      projectPath: absolutePath,
-      status: "running",
-      agentStatus: "idle",
-      unreadCount: 0,
-      startedAt: new Date().toISOString(),
-    },
-    process: proc,
-    history: resumeSessionId ? loadSessionHistory(absolutePath, resumeSessionId) : [],
-    subscribers: new Set(),
-    isSmartNamed: resumeSessionId ? true : false 
-  };
-
-  entries.set(id, entry);
+  entry.process = proc;
+  entry.agent.status = "running";
 
   const rl = readline.createInterface({ input: proc.stdout! });
   rl.on("line", (line) => {
@@ -339,16 +324,75 @@ export function spawnChatAgent(projectPath: string, resumeSessionId?: string): C
 
   proc.on("exit", (code) => {
     entry.agent.status = "stopped";
-    entry.agent.agentStatus = code === 0 ? "done" : "error";
+    if (entry.agent.agentStatus !== "nudge") {
+      entry.agent.agentStatus = code === 0 ? "done" : "error";
+    }
     emit(entry, { type: "agent_status", status: entry.agent.agentStatus });
   });
+}
+
+export function spawnChatAgent(projectPath: string, resumeSessionId?: string, model?: string): ChatAgent {
+  if (resumeSessionId) {
+    for (const entry of entries.values()) {
+      if (entry.sessionId === resumeSessionId || entry.agent.sessionId === resumeSessionId) {
+        if (entry.agent.status !== "running") {
+          console.log(`[Restart] Re-spawning agent for session ${resumeSessionId}`);
+          startAgentProcess(entry);
+        }
+        return entry.agent;
+      }
+    }
+  }
+
+  const id = crypto.randomBytes(3).toString("hex");
+  const absolutePath = path.resolve(projectPath);
+  const title = resumeSessionId 
+    ? (extractTitleFromHistory(absolutePath, resumeSessionId) || "Resumed Chat")
+    : "New Chat";
+
+  const entry: AgentEntry = {
+    agent: {
+      id,
+      type: "chat",
+      title,
+      projectPath: absolutePath,
+      model,
+      sessionId: resumeSessionId,
+      status: "stopped", // Will be set to running in startAgentProcess
+      agentStatus: "idle",
+      unreadCount: 0,
+      startedAt: new Date().toISOString(),
+    },
+    process: null as any,
+    history: resumeSessionId ? loadSessionHistory(absolutePath, resumeSessionId) : [],
+    subscribers: new Set(),
+    isSmartNamed: resumeSessionId ? true : false,
+    sessionId: resumeSessionId
+  };
+
+  entries.set(id, entry);
+  startAgentProcess(entry);
 
   return entry.agent;
 }
 
+export function findAgentBySessionId(sessionId: string): ChatAgent | undefined {
+  for (const entry of entries.values()) {
+    if (entry.sessionId === sessionId || entry.agent.sessionId === sessionId) {
+      return entry.agent;
+    }
+  }
+  return undefined;
+}
+
 export function sendMessage(agentId: string, text: string): boolean {
   const entry = entries.get(agentId);
-  if (!entry || entry.agent.status !== "running") return false;
+  if (!entry) return false;
+
+  if (entry.agent.status !== "running") {
+    console.log(`[Restart] Re-spawning agent ${agentId} for session ${entry.sessionId}`);
+    startAgentProcess(entry);
+  }
 
   if (entry.agent.title === "New Chat" && text.trim() && !isNoise(text)) {
     entry.agent.title = text.slice(0, 40) + (text.length > 40 ? "…" : "");
@@ -373,6 +417,7 @@ export function sendMessage(agentId: string, text: string): boolean {
     session_id: entry.sessionId ?? "default",
     parent_tool_use_id: null,
   }) + "\n";
+  console.log(`[Claude] Writing to stdin for ${agentId}: ${msg.trim()}`);
   entry.process.stdin!.write(msg);
   return true;
 }
@@ -381,7 +426,6 @@ export function subscribeChatAgent(agentId: string, ws: WebSocket): void {
   const entry = entries.get(agentId);
   if (!entry) return;
   
-  // Mark as read when someone connects
   entry.agent.unreadCount = 0;
   entry.subscribers.add(ws);
   
@@ -404,9 +448,9 @@ export function listChatAgents(): ChatAgent[] {
 export function killChatAgent(id: string): void {
   const entry = entries.get(id);
   if (!entry) return;
-  entry.process.kill("SIGINT");
+  entry.process?.kill("SIGINT");
   setTimeout(() => {
-    try { entry.process.kill("SIGKILL"); } catch { /* ignore */ }
+    try { entry.process?.kill("SIGKILL"); } catch { /* ignore */ }
   }, 2000);
   entry.agent.status = "stopped";
   entries.delete(id);

@@ -20,6 +20,61 @@ export type Session = {
 };
 
 const CLAUDE_PROJECTS = path.join(os.homedir(), ".claude", "projects");
+const METADATA_FILE = path.join(os.homedir(), ".claude", "aimessage-metadata.json");
+
+const TITLE_CACHE = new Map<string, { title: string; mtime: number }>();
+
+type Metadata = {
+  projectAliases: Record<string, string>; // projectKey OR path -> alias
+  sessionAliases: Record<string, string>; // sessionId -> alias
+};
+
+function loadMetadata(): Metadata {
+  try {
+    if (fs.existsSync(METADATA_FILE)) {
+      return JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"));
+    }
+  } catch (err) {
+    console.error("Failed to load metadata:", err);
+  }
+  return { projectAliases: {}, sessionAliases: {} };
+}
+
+function saveMetadata(metadata: Metadata) {
+  try {
+    fs.writeFileSync(METADATA_FILE, JSON.stringify(metadata, null, 2));
+  } catch (err) {
+    console.error("Failed to save metadata:", err);
+  }
+}
+
+export function renameProject(keyOrPath: string, alias: string) {
+  const metadata = loadMetadata();
+  metadata.projectAliases[keyOrPath] = alias;
+  saveMetadata(metadata);
+}
+
+export function renameSession(id: string, alias: string) {
+  const metadata = loadMetadata();
+  metadata.sessionAliases[id] = alias;
+  saveMetadata(metadata);
+}
+
+export function createProjectFolder(name: string, customPath?: string): string {
+  const baseDir = path.join(os.homedir(), "projects");
+  const projectPath = customPath 
+    ? path.resolve(customPath.replace(/^~/, os.homedir()))
+    : path.join(baseDir, name.toLowerCase().replace(/\s+/g, "-"));
+
+  if (!fs.existsSync(projectPath)) {
+    fs.mkdirSync(projectPath, { recursive: true });
+  }
+
+  // Auto-alias this path to the human name
+  renameProject(projectPath, name);
+  
+  return projectPath;
+}
 
 function decodeProjectPath(key: string, dir: string): string {
   const jsonlFiles = fs
@@ -87,7 +142,8 @@ export function listProjects(): Project[] {
     }
 
     const projectPath = decodeProjectPath(key, dir);
-    const name = path.basename(projectPath) || key;
+    const metadata = loadMetadata();
+    const name = metadata.projectAliases[key] || metadata.projectAliases[projectPath] || path.basename(projectPath) || key;
 
     projects.push({
       key,
@@ -123,11 +179,29 @@ export function listSessions(projectKey: string): Session[] {
       continue;
     }
 
+    const sessionId = file.replace(/\.jsonl$/, "");
+    const cacheKey = `${projectKey}:${sessionId}`;
+    const cached = TITLE_CACHE.get(cacheKey);
+
+    if (cached && cached.mtime === stat.mtime.getTime()) {
+      const metadata = loadMetadata();
+      const displayTitle = metadata.sessionAliases[sessionId] || cached.title;
+      sessions.push({
+        id: sessionId,
+        title: displayTitle,
+        preview: null,
+        created: stat.birthtime,
+        modified: stat.mtime,
+      });
+      continue;
+    }
+
     let title: string | null = null;
     let isJunk = false;
 
     try {
-      const lines = fs.readFileSync(filePath, "utf-8").split("\n");
+      const content = fs.readFileSync(filePath, "utf-8");
+      const lines = content.split("\n");
       
       // RULE 1: Skip sidechains
       const firstLine = lines[0];
@@ -174,9 +248,13 @@ export function listSessions(projectKey: string): Session[] {
     }
 
     if (!isJunk && title) {
+      TITLE_CACHE.set(cacheKey, { title, mtime: stat.mtime.getTime() });
+      const metadata = loadMetadata();
+      const displayTitle = metadata.sessionAliases[sessionId] || title;
+
       sessions.push({
-        id: file.replace(/\.jsonl$/, ""),
-        title,
+        id: sessionId,
+        title: displayTitle,
         preview: null,
         created: stat.birthtime,
         modified: stat.mtime,

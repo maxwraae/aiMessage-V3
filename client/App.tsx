@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import ChatView from "./components/ChatView";
+import ProjectOnboardingView from "./components/ProjectOnboardingView";
 
 type Project = {
   key: string;
@@ -14,6 +15,8 @@ type ChatAgentData = {
   type: "chat";
   title: string;
   projectPath: string;
+  model?: string;
+  sessionId?: string;
   status: "running" | "stopped";
   agentStatus: "idle" | "thinking" | "done" | "error";
   unreadCount: number;
@@ -26,7 +29,42 @@ type Session = {
   preview: string | null;
   created: string;
   modified: string;
+  status: "running" | "stopped";
+  agentId?: string;
+  agentStatus?: "idle" | "thinking" | "done" | "error" | "nudge";
+  unreadCount: number;
 };
+
+function SessionAvatar({ session, initials }: { session: Session; initials: string }) {
+  const isThinking = session.agentStatus === "thinking";
+  const isNudge = session.agentStatus === "nudge";
+  const isWarm = session.status === "running";
+
+  return (
+    <div className="relative flex-shrink-0 mr-3">
+      {/* Blue Ring for Nudge */}
+      {isNudge && (
+        <div className="absolute -inset-1 rounded-full border-2 border-[#007AFF] animate-pulse" />
+      )}
+      
+      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] lg:text-[11px] font-bold transition-all duration-300 ${
+        isWarm ? 'bg-gray-100 text-gray-700' : 'bg-gray-100/50 text-gray-400'
+      }`}>
+        {initials}
+      </div>
+
+      {/* Thinking Indicator (Amber Pulse) */}
+      {isThinking && (
+        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#FFB000] rounded-full border-2 border-white animate-pulse" />
+      )}
+      
+      {/* Unread Indicator (iMessage Blue Dot) */}
+      {session.unreadCount > 0 && !isNudge && (
+        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#007AFF] rounded-full shadow-sm" />
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -34,6 +72,7 @@ export default function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [agents, setAgents] = useState<ChatAgentData[]>([]);
   const [activeAgentIds, setActiveAgentIds] = useState<string[]>([]);
+  const [onboardingProject, setOnboardingProject] = useState(false);
   const [spawning, setSpawning] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewStack, setViewStack] = useState<string[]>(["projects"]); // 'projects' | 'messages' | 'chat'
@@ -44,11 +83,20 @@ export default function App() {
     fetch("/api/agents").then((r) => r.json()).then(setAgents).catch(() => {});
 
     pollRef.current = setInterval(() => {
+      // Poll active agents to keep global state fresh
       fetch("/api/agents").then((r) => r.json()).then(setAgents).catch(() => {});
+      
+      // If we have a project open, refresh its sessions
+      if (selectedProject) {
+        fetch(`/api/projects/${encodeURIComponent(selectedProject.key)}/sessions`)
+          .then((r) => r.json())
+          .then(setSessions)
+          .catch(() => {});
+      }
     }, 3000);
 
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, []);
+  }, [selectedProject]);
 
   function openProject(project: Project) {
     setSelectedProject(project);
@@ -62,13 +110,14 @@ export default function App() {
   }
 
   function goBack() {
+    setOnboardingProject(false);
     setViewStack((prev) => {
       const next = [...prev];
       if (next.length > 1) {
         next.pop();
         if (next[next.length - 1] === "projects") {
           setSelectedProject(null);
-          setActiveAgentIds([]);
+          // Don't clear active agents, they stay running
         }
         return next;
       }
@@ -95,13 +144,25 @@ export default function App() {
         }),
       });
       const agent: ChatAgentData = await res.json();
-      setAgents((prev) => [...prev, agent]);
+      
+      setAgents((prev) => {
+        const existing = prev.find(a => a.id === agent.id);
+        if (existing) return prev;
+        return [...prev, agent];
+      });
       
       if (split && activeAgentIds.length < 4) {
-        setActiveAgentIds(prev => [...prev, agent.id]);
+        if (!activeAgentIds.includes(agent.id)) {
+          setActiveAgentIds(prev => [...prev, agent.id]);
+        }
       } else {
         setActiveAgentIds([agent.id]);
       }
+
+      // Refresh sessions immediately to show "Warm" state
+      fetch(`/api/projects/${encodeURIComponent(targetProject.key)}/sessions`)
+        .then((r) => r.json())
+        .then(setSessions);
 
       setViewStack(["projects", "messages", "chat"]);
     } catch {
@@ -115,6 +176,33 @@ export default function App() {
     await fetch(`/api/agents/${agent.id}`, { method: "DELETE" }).catch(() => {});
     setAgents((prev) => prev.filter((a) => a.id !== agent.id));
     setActiveAgentIds((prev) => prev.filter((id) => id !== agent.id));
+  }
+
+  async function switchAgentModel(agentId: string, model: string) {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) return;
+
+    // 1. Kill the old one
+    await fetch(`/api/agents/${agent.id}`, { method: "DELETE" }).catch(() => {});
+    
+    // 2. Spawn a new one with same sessionId and new model
+    try {
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectPath: agent.projectPath,
+          resumeSessionId: agent.sessionId,
+          model,
+        }),
+      });
+      const newAgent: ChatAgentData = await res.json();
+      
+      setAgents((prev) => prev.map(a => a.id === agentId ? newAgent : a));
+      setActiveAgentIds((prev) => prev.map(id => id === agentId ? newAgent.id : id));
+    } catch (err) {
+      alert("Failed to switch model");
+    }
   }
 
   async function handleRenameProject(project: Project) {
@@ -150,34 +238,35 @@ export default function App() {
   }
 
   async function handleCreateProject() {
-    const name = prompt("Enter project name:");
-    if (!name) return;
-    
-    const customPath = prompt("Custom path (optional, leave blank for default):");
-    
+    setOnboardingProject(true);
+    setViewStack(["projects", "messages", "chat"]);
+  }
+
+  async function completeOnboarding(name: string, customPath?: string, model?: string) {
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, path: customPath || undefined }),
+        body: JSON.stringify({ name, path: customPath, model }),
       });
       const { agent } = await res.json();
       
-      // Refresh project list
       const projectsRes = await fetch("/api/projects");
       const newProjects = await projectsRes.json();
       setProjects(newProjects);
 
-      // Open the new agent
       setAgents((prev) => [...prev, agent]);
       setActiveAgentIds([agent.id]);
+      setOnboardingProject(false);
       setViewStack(["projects", "messages", "chat"]);
     } catch (err) {
       alert("Failed to create project");
+      setOnboardingProject(false);
     }
   }
 
   function toggleAgentOnStage(agentId: string, split: boolean = false) {
+    setOnboardingProject(false);
     if (split) {
       if (activeAgentIds.includes(agentId)) return;
       if (activeAgentIds.length < 4) {
@@ -220,7 +309,7 @@ export default function App() {
   const currentScene = viewStack[viewStack.length - 1];
 
   return (
-    <div className="flex h-[100dvh] bg-white text-gray-900 overflow-hidden font-sans">
+    <div className="fixed inset-0 flex bg-white text-gray-900 overflow-hidden font-sans">
       {/* Sidebar / Navigation Layer */}
       <div className={`
         flex-shrink-0 w-full lg:w-[320px] border-r border-black/[0.05] flex flex-col z-10 bg-white relative
@@ -270,6 +359,7 @@ export default function App() {
                 .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
                 .map((project) => {
                   const initials = project.name.substring(0, 2).toUpperCase();
+                  const count = activeAgentCount(project);
                   return (
                     <div
                       key={project.key}
@@ -282,20 +372,12 @@ export default function App() {
                       <div className="flex-1 min-w-0 pr-4">
                         <div className="flex justify-between items-baseline">
                           <span className="font-bold text-[15px] lg:text-[14px] truncate">{project.name}</span>
-                          <span className="text-[12px] lg:text-[11px] text-gray-400 font-medium">Now</span>
+                          {count > 0 && <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse ml-2" />}
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-[13px] lg:text-[12px] text-gray-500 truncate">
-                            {project.sessionCount} active sessions
+                            {project.sessionCount} sessions
                           </div>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleRenameProject(project); }}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 rounded transition-opacity"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                          </button>
                         </div>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-200 mr-4 flex-shrink-0">
@@ -306,75 +388,15 @@ export default function App() {
                 })}
             </div>
           ) : (
-            /* Scene 2: Messages List */
+            /* Scene 2: Unified Messages List */
             <div className="space-y-0.5">
-              {/* Active Agents */}
-              {projectAgents
-                .filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((agent) => {
-                  const isSelected = activeAgentIds.includes(agent.id);
-                  const initials = (agent.title || "?").substring(0, 2).toUpperCase();
-                  return (
-                    <div
-                      key={agent.id}
-                      onClick={() => toggleAgentOnStage(agent.id)}
-                      className={`flex items-center cursor-pointer group transition-all duration-300 relative border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5 ${
-                        isSelected ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" : "hover:bg-black/[0.03] rounded-xl mx-1"
-                      }`}
-                    >
-                      <div className="w-2.5 flex-shrink-0 flex justify-center ml-1">
-                        {agent.unreadCount > 0 && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-[#3478F6]'}`} />}
-                      </div>
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] lg:text-[11px] font-bold flex-shrink-0 mr-3 ${
-                        isSelected ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500'
-                      }`}>
-                        {initials}
-                      </div>
-                      <div className="flex-1 min-w-0 pr-4">
-                        <div className="flex justify-between items-baseline">
-                          <span className={`font-bold text-[15px] lg:text-[14px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-                            {agent.title}
-                          </span>
-                          <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
-                            <span className={`text-[12px] lg:text-[11px] font-medium transition-opacity duration-200 group-hover:opacity-0 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
-                              Now
-                            </span>
-                            <div className="absolute right-0 flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center justify-center h-full">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); killAgent(agent); }}
-                                className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm group/btn flex-shrink-0"
-                              >
-                                <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
-                                  <path d="M18 6 6 18M6 6l12 12"/>
-                                </svg>
-                              </button>
-                              {!isSelected && activeAgentIds.length < 4 && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); toggleAgentOnStage(agent.id, true); }}
-                                  className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm group/btn flex-shrink-0"
-                                >
-                                  <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
-                                    <path d="M12 5v14M5 12h14"/>
-                                  </svg>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className={`text-[13px] lg:text-[12px] truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                          {agent.agentStatus === 'thinking' ? 'Typing...' : 'Active session'}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-              {/* Past Sessions */}
               {sessions
                 .filter(s => (s.title || s.id).toLowerCase().includes(searchQuery.toLowerCase()))
                 .map((session) => {
                   const initials = (session.title || "?").substring(0, 2).toUpperCase();
-                  const isSelected = activeAgentIds.includes(session.id);
+                  const isWarm = session.status === "running";
+                  const isSelected = activeAgentIds.includes(session.agentId || "");
+                  
                   const date = new Date(session.modified);
                   const today = new Date();
                   const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
@@ -385,26 +407,59 @@ export default function App() {
                       key={session.id}
                       onClick={() => startAgent(session.id)}
                       className={`flex items-center cursor-pointer group transition-all duration-300 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5 ${
-                        isSelected ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" : "hover:bg-black/[0.03] rounded-xl mx-1"
+                        isSelected 
+                          ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" 
+                          : isWarm 
+                            ? "hover:bg-black/[0.03] opacity-100" 
+                            : "hover:bg-black/[0.03] opacity-60 hover:opacity-100"
                       }`}
                     >
-                      <div className="w-3 flex-shrink-0" />
-                      <div className={`w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 mr-3 flex-shrink-0`}>
-                        {initials}
-                      </div>
+                      <SessionAvatar session={session} initials={initials} />
+                      
                       <div className="flex-1 min-w-0 pr-4">
                         <div className="flex justify-between items-baseline">
-                          <span className={`font-bold text-[15px] lg:text-[14px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>{session.title ?? session.id.slice(0, 8)}</span>
+                          <span className={`font-bold text-[15px] lg:text-[14px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                            {session.title ?? session.id.slice(0, 8)}
+                          </span>
                           <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
-                            <span className="text-[12px] lg:text-[11px] text-gray-400 font-medium transition-opacity duration-200 group-hover:opacity-0">{timestampStr}</span>
+                            <span className={`text-[12px] lg:text-[11px] font-medium transition-opacity duration-200 group-hover:opacity-0 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
+                              {timestampStr}
+                            </span>
                             <div className="absolute right-0 flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center justify-center h-full">
-                              <button onClick={(e) => { e.stopPropagation(); handleRenameSession(session); }} className="w-3.5 h-3.5 rounded-full bg-gray-400 flex items-center justify-center shadow-sm flex-shrink-0 group/btn hover:bg-gray-500"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                              <button onClick={(e) => { e.stopPropagation(); }} className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-                              <button onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }} className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M12 5v14M5 12h14"/></svg></button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleRenameSession(session); }} 
+                                className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 group/btn ${isSelected ? 'bg-white/20' : 'bg-gray-400'}`}
+                              >
+                                <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                              </button>
+                              {isWarm && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); killAgent(agents.find(a => a.id === session.agentId)!); }}
+                                  className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"
+                                >
+                                  <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
+                                    <path d="M18 6 6 18M6 6l12 12"/>
+                                  </svg>
+                                </button>
+                              )}
+                              {!isSelected && activeAgentIds.length < 4 && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }}
+                                  className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"
+                                >
+                                  <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
+                                    <path d="M12 5v14M5 12h14"/>
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
-                        <div className={`text-[13px] lg:text-[12px] text-gray-500 truncate`}>{session.preview || "No messages yet"}</div>
+                        <div className={`text-[13px] lg:text-[12px] truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                          {session.agentStatus === 'thinking' ? 'Typing...' : (session.preview || "Active session")}
+                        </div>
                       </div>
                     </div>
                   );
@@ -415,8 +470,8 @@ export default function App() {
 
         {/* Floating Search & Compose Dock */}
         <div className="absolute bottom-8 left-0 right-0 px-6 lg:px-10 flex items-center gap-2 z-20 pointer-events-none">
-          <div className="flex-1 h-10 bg-white/95 backdrop-blur-2xl rounded-full border border-black/[0.03] shadow-[0_4px_24px_rgba(0,0,0,0.08)] flex items-center px-3 pointer-events-auto">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-900 mr-2 flex-shrink-0">
+          <div className="flex-1 h-10 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] rounded-full border border-black/[0.03] flex items-center px-3 pointer-events-auto">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400 mr-2 flex-shrink-0">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
             </svg>
             <input 
@@ -426,7 +481,7 @@ export default function App() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent border-none outline-none text-[16px] w-full text-gray-900 placeholder-gray-400 font-normal" 
             />
-            <div className="p-1 text-gray-900 flex-shrink-0">
+            <div className="p-1 text-gray-400 flex-shrink-0">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/><path d="M8 23h8"/>
               </svg>
@@ -434,9 +489,9 @@ export default function App() {
           </div>
           <button
             onClick={() => startAgent()}
-            className="w-10 h-10 rounded-full bg-white/95 backdrop-blur-2xl border border-black/[0.03] shadow-[0_4px_24px_rgba(0,0,0,0.08)] text-gray-900 flex items-center justify-center pointer-events-auto hover:bg-white active:scale-95 transition-all flex-shrink-0"
+            className="w-10 h-10 rounded-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] border border-black/[0.03] text-gray-400 flex items-center justify-center pointer-events-auto hover:bg-white active:scale-95 transition-all flex-shrink-0"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </button>
@@ -445,7 +500,15 @@ export default function App() {
 
       {/* Main area - The Stage */}
       <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${currentScene !== 'chat' ? 'hidden lg:flex' : 'flex'}`}>
-        {activeAgentIds.length > 0 ? (
+        {onboardingProject ? (
+          <ProjectOnboardingView 
+            onComplete={completeOnboarding}
+            onCancel={() => {
+              setOnboardingProject(false);
+              if (activeAgentIds.length === 0) setViewStack(["projects"]);
+            }}
+          />
+        ) : activeAgentIds.length > 0 ? (
           <div className={`flex-1 grid gap-px bg-black/[0.05] lg:${getGridClass(activeAgentIds.length)} grid-cols-1 grid-rows-1 min-h-0`}>
             {activeAgentIds.map((id, index) => {
               const agent = agents.find(a => a.id === id);
@@ -466,9 +529,23 @@ export default function App() {
                       <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 lg:hidden mb-0.5">
                         {(agent?.title || "?").substring(0, 2).toUpperCase()}
                       </div>
-                      <span className="text-[13px] lg:text-[14px] font-bold text-gray-900 truncate w-full text-center lg:text-left">
-                        {agent?.title || "Untitled Chat"}
-                      </span>
+                      <div className="flex items-center gap-2 max-w-full">
+                        <span className="text-[13px] lg:text-[14px] font-bold text-gray-900 truncate">
+                          {agent?.title || "Untitled Chat"}
+                        </span>
+                        {/* Model Badge/Selector */}
+                        <button 
+                          onClick={() => {
+                            const models = ['sonnet', 'haiku', 'opus'];
+                            const current = agent?.model || 'sonnet';
+                            const next = models[(models.indexOf(current) + 1) % models.length];
+                            switchAgentModel(id, next);
+                          }}
+                          className="flex-shrink-0 px-1.5 py-0.5 rounded bg-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-[#3478F6] hover:bg-[#3478F6]/10 transition-all cursor-pointer"
+                        >
+                          {agent?.model || 'sonnet'}
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity min-w-[60px] justify-end">
                       {agent && <button onClick={(e) => { e.stopPropagation(); killAgent(agent); }} className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
@@ -476,7 +553,15 @@ export default function App() {
                     </div>
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <ChatView agentId={id} onTitleUpdate={(title) => handleTitleUpdate(id, title)} onUnreadReset={() => handleUnreadReset(id)} isTiled={activeAgentIds.length > 1} />
+                    <ChatView 
+                      key={id}
+                      agentId={id} 
+                      onTitleUpdate={(title) => handleTitleUpdate(id, title)} 
+                      onUnreadReset={() => handleUnreadReset(id)} 
+                      onModelSwitch={(model) => switchAgentModel(id, model)}
+                      currentModel={agent?.model || "sonnet"}
+                      isTiled={activeAgentIds.length > 1} 
+                    />
                   </div>
                 </div>
               );

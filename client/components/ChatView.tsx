@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StreamItem, ChatWsServerMessage, ChatWsClientMessage } from "../types/stream";
 
-type AgentStatus = "idle" | "thinking" | "done" | "error" | "connecting";
+type AgentStatus = "idle" | "thinking" | "done" | "error" | "connecting" | "nudge";
 
 type ToolCallItemProps = {
   item: Extract<StreamItem, { kind: "tool_call" }>;
@@ -10,10 +10,6 @@ type ToolCallItemProps = {
 
 function ToolCallItem({ item, isTiled }: ToolCallItemProps) {
   const [expanded, setExpanded] = useState(false);
-
-  const statusColor =
-    item.status === "running" ? "bg-amber-400" :
-    item.status === "completed" ? "bg-green-500" : "bg-red-500";
 
   return (
     <div className="w-full my-4">
@@ -77,7 +73,6 @@ function groupMessages(items: StreamItem[]): MessageGroup[] {
     else if (item.kind === "tool_call") kind = "tool";
     else if (item.kind === "error") kind = "error";
 
-    // Assistant messages, text deltas, and thoughts are all "agent"
     if (item.kind === "assistant_message" || item.kind === "text_delta" || item.kind === "thought") kind = "agent";
 
     const canGroup = currentGroup && 
@@ -129,8 +124,6 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
         {index === 0 && (
           <div className="flex items-center gap-3 w-full mb-2">
             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Agent Response</span>
-            
-            {/* Reasoning Toggle - Inline and gray */}
             {group.items.some(i => i.kind === "thought") && (
               <button
                 onClick={() => setShowReasoning(!showReasoning)}
@@ -138,17 +131,11 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
               >
                 <span className="opacity-50 text-[8px]">•</span>
                 {showReasoning ? "Hide reasoning" : "Show reasoning"}
-                <svg 
-                  width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" 
-                  className={`transition-transform duration-200 ${showReasoning ? "rotate-90" : ""}`}
-                >
-                  <path d="m9 18 6-6-6-6"/>
-                </svg>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className={`transition-transform duration-200 ${showReasoning ? "rotate-90" : ""}`}><path d="m9 18 6-6-6-6"/></svg>
               </button>
             )}
           </div>
         )}
-
         {isThought ? (
           showReasoning && (
             <div className="w-full mb-4 p-4 rounded-xl bg-gray-50/30 border border-black/[0.02] shadow-inner">
@@ -164,9 +151,7 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
     );
   }
 
-  if (item.kind === "tool_call") {
-    return <ToolCallItem item={item} />;
-  }
+  if (item.kind === "tool_call") return <ToolCallItem item={item} />;
 
   if (item.kind === "system") {
     return (
@@ -195,16 +180,33 @@ type Props = {
   agentId: string;
   onTitleUpdate?: (title: string) => void;
   onUnreadReset?: () => void;
+  onModelSwitch?: (model: string) => void;
+  currentModel?: string;
   isTiled?: boolean;
 };
 
-export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, isTiled }: Props) {
+export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onModelSwitch, currentModel, isTiled }: Props) {
   const [items, setItems] = useState<StreamItem[]>([]);
   const [status, setStatus] = useState<AgentStatus>("connecting");
   const [input, setInput] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
 
   const upsertItem = useCallback((item: StreamItem) => {
     setItems((prev) => {
@@ -234,7 +236,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, isTile
         } else if (msg.type === "stream_item") {
           upsertItem(msg.item);
         } else if (msg.type === "agent_status") {
-          setStatus(msg.status);
+          setStatus(msg.status as AgentStatus);
         } else if (msg.type === "chat_title_update") {
           onTitleUpdate?.(msg.title);
         } else if (msg.type === "unread_cleared") {
@@ -250,7 +252,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, isTile
       ws.close();
       wsRef.current = null;
     };
-  }, [agentId, upsertItem]);
+  }, [agentId, onTitleUpdate, onUnreadReset, upsertItem]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -259,51 +261,103 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, isTile
   function sendUserMessage() {
     const text = input.trim();
     if (!text || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    
+    // Maintain focus on mobile
+    inputRef.current?.focus();
+
     const msg: ChatWsClientMessage = { type: "user_input", text };
     wsRef.current.send(JSON.stringify(msg));
+    
     setInput("");
-    inputRef.current?.focus();
+    setTimeout(() => inputRef.current?.focus(), 10);
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendUserMessage();
+  async function startRecording() {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Microphone access is not supported in this browser or context (e.g. requires HTTPS).");
+        return;
+      }
+
+      if (isRecording) {
+        stopRecording();
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+      
+      recorder.ondataavailable = (e) => { 
+        if (e.data.size > 0) audioChunksRef.current.push(e.data); 
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setIsRecording(false);
+        setIsTranscribing(true);
+        if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
+
+        const formData = new FormData();
+        formData.append("audio", audioBlob);
+        try {
+          const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+          const { text } = await res.json();
+          if (text) setInput(prev => prev + (prev ? " " : "") + text);
+        } catch (err) { 
+          console.error("Transcription failed:", err); 
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+
+      // 30s limit
+      recordingTimeoutRef.current = setTimeout(() => {
+        if (mediaRecorderRef.current?.state === "recording") {
+          stopRecording();
+        }
+      }, 30000);
+
+    } catch (err) { 
+      console.error("Mic access denied:", err); 
     }
+  }
+
+  function stopRecording() {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+    }
+    if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
   }
 
   const isThinking = status === "thinking";
   const canSend = input.trim().length > 0 && status !== "thinking" && status !== "connecting";
-
   const messageGroups = groupMessages(items);
 
   return (
-    <div className="flex flex-col h-full bg-transparent min-h-0">
+    <div className="flex flex-col h-full bg-transparent min-h-0 relative">
       {/* Messages */}
-      <div className={`flex-1 overflow-y-auto ${isTiled ? "px-4 py-4" : "px-8 py-8"} space-y-6 min-h-0 touch-pan-y`}>
+      <div className={`flex-1 overflow-y-auto ${isTiled ? "px-4" : "px-8"} pt-8 pb-32 space-y-6 min-h-0 touch-pan-y overscroll-contain relative z-10`} style={{ WebkitOverflowScrolling: "touch" }}>
         {messageGroups.length === 0 && status !== "connecting" && (
-          <div className="flex flex-col items-center justify-center h-full space-y-4 opacity-20">
+          <div className="flex flex-col items-center justify-center h-48 space-y-4 opacity-20 pointer-events-none">
             <div className="w-12 h-12 rounded-full border-2 border-dashed border-white flex items-center justify-center">
-              <span className="text-xl">✨</span>
+              <div className="w-4 h-4 rounded-full bg-white opacity-40 animate-pulse" />
             </div>
-            <p className="text-sm font-medium tracking-wide">NEW CONVERSATION</p>
+            <p className="text-sm font-medium tracking-wide uppercase">New Conversation</p>
           </div>
         )}
-        
         {messageGroups.map((group, gIdx) => (
           <div key={gIdx} className="space-y-1">
             {group.items.map((item, iIdx) => (
-              <MessageBubble 
-                key={item.id + iIdx} 
-                item={item} 
-                group={group} 
-                index={iIdx} 
-                total={group.items.length} 
-              />
+              <MessageBubble key={item.id + iIdx} item={item} group={group} index={iIdx} total={group.items.length} />
             ))}
           </div>
         ))}
-
         {isThinking && (
           <div className="flex justify-start items-center ml-2 mb-4">
             <div className="flex gap-1 px-2 py-1">
@@ -316,53 +370,55 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, isTile
         <div ref={bottomRef} />
       </div>
 
-      {/* Input bar */}
-      <div className={`flex-shrink-0 ${isTiled ? "px-2 py-3" : "px-4 py-4"} bg-white`}>
-        <div className="flex items-center gap-2">
-          {/* Action Button (+) */}
-          <button className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-          </button>
-
-          {/* Text Input Pill */}
-          <div className="flex-1 glass-input rounded-[22px] flex items-end bg-white border border-gray-200 py-1.5 px-1">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="iMessage"
-              rows={1}
-              disabled={status === "connecting" || status === "error"}
-              className="flex-1 resize-none bg-transparent border-none text-[17px] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 transition-all max-h-48 overflow-y-auto px-4 py-1"
-              style={{ fieldSizing: "content" } as React.CSSProperties}
-            />
-            {/* Mic inside pill (only if no text) */}
+      {/* Floating Search Dock Mirror */}
+      <div className="px-6 pb-8 pt-2 lg:px-10 flex items-end gap-2 z-[100] relative">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendUserMessage();
+          }}
+          className="flex-1 min-h-[44px] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] rounded-[22px] border border-black/[0.03] flex items-center px-3 py-1.5"
+        >
+          <input 
+            ref={inputRef}
+            type="text"
+            placeholder={isTranscribing ? "Transcribing..." : "iMessage"} 
+            value={input}
+            enterKeyHint="send"
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isTranscribing}
+            className={`bg-transparent border-none outline-none text-[17px] flex-1 text-gray-900 placeholder-gray-400 font-normal py-1 ${isTranscribing ? 'opacity-50' : ''}`} 
+          />
+          
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Microphone - only shows when empty */}
             {!input.trim() && (
-              <div className="px-2 pb-1 text-gray-400">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/><path d="M8 23h8"/>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }} 
+                disabled={isTranscribing}
+                className={`p-1 transition-all duration-300 cursor-pointer ${isRecording ? 'text-red-500 scale-110' : 'text-gray-400 hover:text-gray-600'}`}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isRecording ? 'animate-pulse' : ''}>
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <path d="M12 19v4"/>
+                  <path d="M8 23h8"/>
                 </svg>
-              </div>
+              </button>
+            )}
+
+            {/* Send Button - only shows when text exists */}
+            {input.trim() && (
+              <button 
+                type="submit"
+                className="w-8 h-8 rounded-full bg-[#007AFF] text-white flex items-center justify-center shadow-sm active:scale-90 transition-all flex-shrink-0 cursor-pointer"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </button>
             )}
           </div>
-
-          {/* Send Arrow (outside pill, only if text exists) */}
-          {input.trim() && (
-            <button
-              onClick={sendUserMessage}
-              disabled={!canSend}
-              className="w-10 h-10 rounded-full bg-[#007AFF] text-white flex items-center justify-center shadow-md shadow-[#007AFF]/20 active:scale-95 transition-transform"
-              aria-label="Send"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 19V5M5 12l7-7 7 7"/>
-              </svg>
-            </button>
-          )}
-        </div>
+        </form>
       </div>
     </div>
   );
