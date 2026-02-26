@@ -67,6 +67,7 @@ function SessionAvatar({ session, initials }: { session: Session; initials: stri
 }
 
 export default function App() {
+  console.log("[App] Rendering...");
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -125,12 +126,13 @@ export default function App() {
     });
   }
 
-  async function startAgent(resumeSessionId?: string, split: boolean = false) {
+  const startAgent = useCallback(async (resumeSessionId?: string, split: boolean = false, explicitPath?: string, model?: string) => {
     let targetProject = selectedProject;
-    if (!targetProject) {
-      targetProject = projects.find(p => p.name.toLowerCase() === "maxwraae") || projects[0];
-    }
-    if (!targetProject) return;
+    
+    // Use explicit path from session if provided, otherwise fallback to selected or defaults
+    const projectPath = explicitPath || targetProject?.path || projects.find(p => p.name.toLowerCase() === "maxwraae")?.path || projects[0]?.path;
+    
+    if (!projectPath) return;
 
     setSpawning(true);
     try {
@@ -138,9 +140,10 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          projectPath: targetProject.path,
+          projectPath,
           type: "chat",
           resumeSessionId,
+          model,
         }),
       });
       const agent: ChatAgentData = await res.json();
@@ -160,9 +163,11 @@ export default function App() {
       }
 
       // Refresh sessions immediately to show "Warm" state
-      fetch(`/api/projects/${encodeURIComponent(targetProject.key)}/sessions`)
-        .then((r) => r.json())
-        .then(setSessions);
+      if (selectedProject) {
+        fetch(`/api/projects/${encodeURIComponent(selectedProject.key)}/sessions`)
+          .then((r) => r.json())
+          .then(setSessions);
+      }
 
       setViewStack(["projects", "messages", "chat"]);
     } catch {
@@ -170,15 +175,15 @@ export default function App() {
     } finally {
       setSpawning(false);
     }
-  }
+  }, [selectedProject, projects, activeAgentIds.length]);
 
-  async function killAgent(agent: ChatAgentData) {
+  const killAgent = useCallback(async (agent: ChatAgentData) => {
     await fetch(`/api/agents/${agent.id}`, { method: "DELETE" }).catch(() => {});
     setAgents((prev) => prev.filter((a) => a.id !== agent.id));
     setActiveAgentIds((prev) => prev.filter((id) => id !== agent.id));
-  }
+  }, []);
 
-  async function switchAgentModel(agentId: string, model: string) {
+  const switchAgentModel = useCallback(async (agentId: string, model: string) => {
     const agent = agents.find(a => a.id === agentId);
     if (!agent) return;
 
@@ -203,9 +208,9 @@ export default function App() {
     } catch (err) {
       alert("Failed to switch model");
     }
-  }
+  }, [agents]);
 
-  async function handleRenameProject(project: Project) {
+  const handleRenameProject = async (project: Project) => {
     const alias = prompt("Enter new project name:", project.name);
     if (alias === null) return;
     
@@ -219,9 +224,9 @@ export default function App() {
     } catch (err) {
       alert("Failed to rename project");
     }
-  }
+  };
 
-  async function handleRenameSession(session: Session) {
+  const handleRenameSession = async (session: Session) => {
     const alias = prompt("Enter new session name:", session.title || "");
     if (alias === null) return;
     
@@ -235,14 +240,14 @@ export default function App() {
     } catch (err) {
       alert("Failed to rename session");
     }
-  }
+  };
 
-  async function handleCreateProject() {
+  const handleCreateProject = async () => {
     setOnboardingProject(true);
     setViewStack(["projects", "messages", "chat"]);
-  }
+  };
 
-  async function completeOnboarding(name: string, customPath?: string, model?: string) {
+  const completeOnboarding = async (name: string, customPath?: string, model?: string) => {
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
@@ -263,9 +268,9 @@ export default function App() {
       alert("Failed to create project");
       setOnboardingProject(false);
     }
-  }
+  };
 
-  function toggleAgentOnStage(agentId: string, split: boolean = false) {
+  const toggleAgentOnStage = (agentId: string, split: boolean = false) => {
     setOnboardingProject(false);
     if (split) {
       if (activeAgentIds.includes(agentId)) return;
@@ -277,23 +282,23 @@ export default function App() {
     }
 
     setViewStack(["projects", "messages", "chat"]);
-  }
+  };
 
-  function removeFromStage(agentId: string) {
+  const removeFromStage = (agentId: string) => {
     setActiveAgentIds(prev => prev.filter(id => id !== agentId));
-  }
+  };
 
   const projectAgents = useMemo(() => 
     selectedProject ? agents.filter((a) => a.projectPath === selectedProject.path && a.status === "running") : []
   , [agents, selectedProject]);
 
-  function handleTitleUpdate(agentId: string, newTitle: string) {
+  const handleTitleUpdate = useCallback((agentId: string, newTitle: string) => {
     setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, title: newTitle } : a));
-  }
+  }, []);
 
-  function handleUnreadReset(agentId: string) {
+  const handleUnreadReset = useCallback((agentId: string) => {
     setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, unreadCount: 0 } : a));
-  }
+  }, []);
 
   const activeAgentCount = (p: Project) =>
     agents.filter((a) => a.projectPath === p.path && a.status === "running").length;
@@ -405,7 +410,7 @@ export default function App() {
                   return (
                     <div
                       key={session.id}
-                      onClick={() => startAgent(session.id)}
+                      onClick={() => startAgent(session.id, false, session.projectPath)}
                       className={`flex items-center cursor-pointer group transition-all duration-300 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5 ${
                         isSelected 
                           ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" 
@@ -526,10 +531,12 @@ export default function App() {
                       <span className="text-[17px] font-medium">{unreadTotal || ''}</span>
                     </button>
                     <div className="flex flex-col items-center flex-1 lg:items-start lg:ml-2 min-w-0 px-2">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 lg:hidden">
+                      <div className="flex items-center gap-2 max-w-full">
+                        {/* Project Initials (Mobile Only) */}
+                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 lg:hidden flex-shrink-0">
                           {(agent?.title || "?").substring(0, 2).toUpperCase()}
                         </div>
+                        
                         {/* Model Avatar Bubble */}
                         <button 
                           onClick={() => {
@@ -538,13 +545,18 @@ export default function App() {
                             const next = models[(models.indexOf(current) + 1) % models.length];
                             switchAgentModel(id, next);
                           }}
-                          className="w-6 h-6 rounded-full bg-[#3478F6]/10 flex items-center justify-center text-[10px] font-black uppercase text-[#3478F6] hover:bg-[#3478F6]/20 transition-all cursor-pointer shadow-sm border border-[#3478F6]/10"
+                          className="w-6 h-6 rounded-full bg-[#3478F6]/10 flex items-center justify-center text-[10px] font-black uppercase text-[#3478F6] hover:bg-[#3478F6]/20 transition-all cursor-pointer shadow-sm border border-[#3478F6]/10 flex-shrink-0"
                           title={`Switch Model (Current: ${agent?.model || 'sonnet'})`}
                         >
-                          {(agent?.model || 'sonnet').substring(0, 1).toUpperCase()}
+                          {(() => {
+                            const m = (agent?.model || 'sonnet').toLowerCase();
+                            if (m.includes('haiku')) return 'H';
+                            if (m.includes('opus')) return 'O';
+                            if (m.includes('sonnet')) return 'S';
+                            return m.charAt(0).toUpperCase();
+                          })()}
                         </button>
-                      </div>
-                      <div className="flex items-center gap-2 max-w-full">
+
                         <span className="text-[13px] lg:text-[14px] font-bold text-gray-900 truncate">
                           {agent?.title || "Untitled Chat"}
                         </span>
@@ -559,9 +571,9 @@ export default function App() {
                     <ChatView 
                       key={id}
                       agentId={id} 
-                      onTitleUpdate={(title) => handleTitleUpdate(id, title)} 
-                      onUnreadReset={() => handleUnreadReset(id)} 
-                      onModelSwitch={(model) => switchAgentModel(id, model)}
+                      onTitleUpdate={handleTitleUpdate} 
+                      onUnreadReset={handleUnreadReset} 
+                      onModelSwitch={switchAgentModel}
                       currentModel={agent?.model || "sonnet"}
                       isTiled={activeAgentIds.length > 1} 
                     />

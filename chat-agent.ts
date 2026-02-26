@@ -8,6 +8,7 @@ import type { WebSocket } from "ws";
 import type { StreamItem, ChatWsServerMessage } from "./shared/stream-types.js";
 import { isNoise, SMART_NAMING_PROMPT } from "./shared/filter-config.js";
 import { executeOneShot } from "./lib/claude-one-shot.js";
+import { renameSession } from "./session-discovery.js";
 
 export type ChatAgent = {
   id: string;
@@ -72,6 +73,12 @@ async function triggerSmartNaming(entry: AgentEntry) {
     if (smartName && smartName.length < 50 && !isNoise(smartName)) {
       console.log(`[One-Shot] Smart name generated: "${smartName}"`);
       entry.agent.title = smartName.toLowerCase().replace(/[".]/g, "");
+      
+      // Persist to disk so sidebar matches
+      if (entry.sessionId) {
+        renameSession(entry.sessionId, entry.agent.title);
+      }
+
       emit(entry, { type: "chat_title_update", title: entry.agent.title });
     }
   } catch (err) {
@@ -101,6 +108,10 @@ function parseClaudeEvent(line: string, entry: AgentEntry) {
   if (event.type === "system" && event.subtype === "init" && event.session_id) {
     entry.sessionId = event.session_id;
     entry.agent.sessionId = event.session_id;
+    if (event.model) {
+      entry.agent.model = event.model;
+      emit(entry, { type: "chat_title_update", title: entry.agent.title }); // Trigger a refresh of agent data
+    }
     emit(entry, { type: "agent_status", status: "idle" });
     return;
   }
@@ -148,6 +159,19 @@ function parseClaudeEvent(line: string, entry: AgentEntry) {
         entry.history.push(item);
         emit(entry, { type: "stream_item", item });
       }
+    }
+  } else if (event.type === "text_delta" && event.text) {
+    // Real-time streaming!
+    if (!isNoise(event.text)) {
+      emit(entry, { 
+        type: "stream_item", 
+        item: { 
+          kind: "text_delta", 
+          text: event.text, 
+          id: "delta", 
+          timestamp: ts 
+        } 
+      });
     }
   } else if (event.type === "tool_result") {
     const toolId = event.tool_use_id;
@@ -266,6 +290,23 @@ function loadSessionHistory(projectPath: string, sessionId: string): StreamItem[
 }
 
 function startAgentProcess(entry: AgentEntry) {
+  if (entry.agent.status === "running") return;
+  
+  // Verify path exists to prevent synchronous spawn errors
+  if (!fs.existsSync(entry.agent.projectPath)) {
+    const errItem: StreamItem = {
+      kind: "error",
+      text: `Directory not found: ${entry.agent.projectPath}`,
+      id: crypto.randomBytes(3).toString("hex"),
+      timestamp: new Date().toISOString(),
+    };
+    entry.history.push(errItem);
+    entry.agent.agentStatus = "error";
+    emit(entry, { type: "stream_item", item: errItem });
+    emit(entry, { type: "agent_status", status: "error" });
+    return;
+  }
+
   const env = { ...process.env } as Record<string, string | undefined>;
   delete env.CLAUDECODE;
   delete env.CLAUDE_CODE;
@@ -319,7 +360,9 @@ function startAgentProcess(entry: AgentEntry) {
       timestamp: new Date().toISOString(),
     };
     entry.history.push(errItem);
+    entry.agent.agentStatus = "error";
     emit(entry, { type: "stream_item", item: errItem });
+    emit(entry, { type: "agent_status", status: "error" });
   });
 
   proc.on("exit", (code) => {
@@ -424,8 +467,14 @@ export function sendMessage(agentId: string, text: string): boolean {
 
 export function subscribeChatAgent(agentId: string, ws: WebSocket): void {
   const entry = entries.get(agentId);
-  if (!entry) return;
+  if (!entry) {
+    console.warn(`[WS] Subscription failed: Agent ${agentId} not found`);
+    return;
+  }
   
+  console.log(`[WS] Client subscribed to agent ${agentId}. Sending ${entry.history.length} items in snapshot.`);
+  
+  // Mark as read when someone connects
   entry.agent.unreadCount = 0;
   entry.subscribers.add(ws);
   

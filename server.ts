@@ -14,7 +14,13 @@ const originalError = console.error;
 const originalWarn = console.warn;
 
 console.log = (...args) => {
-  appendFileSync(logPath, `[LOG] ${args.join(" ")}\n`);
+  const msg = args.join(" ");
+  // Don't log internal Tailscale noise to the file
+  if (msg.includes("[Tailscale]") || msg.includes("https://maxs-macbook-pro.tail591d8a.ts.net")) {
+    originalLog(...args);
+    return;
+  }
+  appendFileSync(logPath, `[LOG] ${msg}\n`);
   originalLog(...args);
 };
 console.error = (...args) => {

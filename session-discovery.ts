@@ -13,6 +13,8 @@ export type Project = {
 
 export type Session = {
   id: string;
+  projectKey: string;
+  projectPath: string;
   title: string | null;
   preview: string | null;
   created: Date;
@@ -84,24 +86,30 @@ function decodeProjectPath(key: string, dir: string): string {
 
   for (const file of jsonlFiles) {
     try {
-      const firstLine = fs.readFileSync(file, "utf-8").split("\n")[0];
-      if (!firstLine) continue;
-      const parsed = JSON.parse(firstLine) as unknown;
-      if (
-        parsed !== null &&
-        typeof parsed === "object" &&
-        "cwd" in parsed &&
-        typeof (parsed as Record<string, unknown>).cwd === "string"
-      ) {
-        return (parsed as Record<string, string>).cwd;
+      const content = fs.readFileSync(file, "utf-8");
+      const lines = content.split("\n").slice(0, 100); // Scan first 100 lines for CWD
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const parsed = JSON.parse(line) as any;
+        if (
+          parsed !== null &&
+          typeof parsed === "object" &&
+          "cwd" in parsed &&
+          typeof (parsed as Record<string, unknown>).cwd === "string"
+        ) {
+          return (parsed as Record<string, string>).cwd;
+        }
       }
     } catch {
       // ignore parse errors
     }
   }
 
-  // Fallback: strip leading hyphen and treat rest as path
-  return key.startsWith("-") ? key.slice(1).replace(/-/g, "/") : key;
+  // Fallback: strip leading hyphen and treat rest as path. Ensure leading slash.
+  if (key.startsWith("-")) {
+    return "/" + key.slice(1).replace(/-/g, "/");
+  }
+  return key;
 }
 
 export function listProjects(): Project[] {
@@ -145,12 +153,15 @@ export function listProjects(): Project[] {
     const metadata = loadMetadata();
     const name = metadata.projectAliases[key] || metadata.projectAliases[projectPath] || path.basename(projectPath) || key;
 
+    // Use listSessions to get the accurate count after filtering
+    const actualSessions = listSessions(key);
+
     projects.push({
       key,
       path: projectPath,
       name,
       lastActivity,
-      sessionCount: jsonlFiles.length,
+      sessionCount: actualSessions.length,
     });
   }
 
@@ -186,8 +197,11 @@ export function listSessions(projectKey: string): Session[] {
     if (cached && cached.mtime === stat.mtime.getTime()) {
       const metadata = loadMetadata();
       const displayTitle = metadata.sessionAliases[sessionId] || cached.title;
+      const projectPath = decodeProjectPath(projectKey, dir);
       sessions.push({
         id: sessionId,
+        projectKey,
+        projectPath,
         title: displayTitle,
         preview: null,
         created: stat.birthtime,
@@ -251,9 +265,12 @@ export function listSessions(projectKey: string): Session[] {
       TITLE_CACHE.set(cacheKey, { title, mtime: stat.mtime.getTime() });
       const metadata = loadMetadata();
       const displayTitle = metadata.sessionAliases[sessionId] || title;
+      const projectPath = decodeProjectPath(projectKey, dir);
 
       sessions.push({
         id: sessionId,
+        projectKey,
+        projectPath,
         title: displayTitle,
         preview: null,
         created: stat.birthtime,

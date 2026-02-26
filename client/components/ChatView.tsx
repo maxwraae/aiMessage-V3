@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { StreamItem, ChatWsServerMessage, ChatWsClientMessage } from "../types/stream";
 
 type AgentStatus = "idle" | "thinking" | "done" | "error" | "connecting" | "nudge";
@@ -13,7 +15,7 @@ function groupMessages(items: StreamItem[]): MessageGroup[] {
   const groups: MessageGroup[] = [];
   let currentGroup: MessageGroup | null = null;
 
-  items.forEach((item) => {
+  items.filter(item => item.kind !== "thought").forEach((item) => {
     let kind: MessageGroup["kind"] = "agent";
     if (item.kind === "user_message") kind = "user";
     else if (item.kind === "system") kind = "system";
@@ -41,7 +43,58 @@ function groupMessages(items: StreamItem[]): MessageGroup[] {
   return groups;
 }
 
+function ToolCallItem({ item }: { item: Extract<StreamItem, { kind: "tool_call" }> }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="w-full my-2">
+      <div className="bg-gray-50/50 border border-black/[0.03] rounded-lg overflow-hidden shadow-sm">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full flex items-center justify-between px-3 py-2 hover:bg-black/[0.02] transition-colors group/tool text-left"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+              {item.name.replace(/_/g, ' ')}
+            </span>
+            <span className="text-[10px] text-gray-400 font-medium lowercase">
+              {item.status === "running" ? "running..." : item.status === "completed" ? "done" : "failed"}
+            </span>
+          </div>
+          <svg 
+            width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+            className={`text-gray-300 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+          >
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </button>
+        {expanded && (
+          <div className="px-3 pb-3 space-y-2 pt-1 border-t border-black/[0.02]">
+            <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Input</div>
+            <pre className="text-[11px] text-gray-600 font-mono bg-white/50 p-2 rounded border border-black/[0.01] overflow-x-auto">
+              {JSON.stringify(item.input, null, 2)}
+            </pre>
+            {item.result !== undefined && (
+              <>
+                <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-2">Result</div>
+                <pre className="text-[11px] text-gray-600 font-mono bg-white/50 p-2 rounded border border-black/[0.01] overflow-x-auto max-h-40">
+                  {typeof item.result === "string" ? item.result : JSON.stringify(item.result, null, 2)}
+                </pre>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MessageBubble({ item, group, index, total }: { item: StreamItem; group: MessageGroup; index: number; total: number }) {
+  if (item.kind === "tool_call") {
+    return <ToolCallItem item={item} />;
+  }
+
   if (group.kind === "user") {
     const text = (item as any).text || "";
     let radiusClass = "bubble-user-single bubble-tail";
@@ -54,24 +107,36 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
     return (
       <div className="flex justify-end mb-1">
         <div className={`glass-bubble-user text-white px-4 py-2 shadow-sm ${radiusClass} max-w-[85%] lg:max-w-[75%]`}>
-          <p className="text-[17px] leading-snug whitespace-pre-wrap break-words font-sans">{text}</p>
+          <p className="text-[17px] leading-snug whitespace-pre-wrap break-words font-sans antialiased">{text}</p>
         </div>
       </div>
     );
   }
 
   if (group.kind === "agent") {
-    const isThought = item.kind === "thought";
     const text = (item as any).text || "";
 
-    if (isThought) return null; // Keep it simple for now
-
     return (
-      <div className="flex flex-col mb-4 items-start w-full px-1">
+      <div className="flex flex-col mb-4 items-start w-full">
         {index === 0 && (
           <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Agent</div>
         )}
-        <p className="text-[17px] leading-relaxed text-gray-900 whitespace-pre-wrap break-words font-sans">{text}</p>
+        <div className="w-full max-w-full overflow-x-hidden">
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            className="text-[17px] leading-relaxed text-gray-900 font-sans antialiased"
+            components={{
+              p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
+              ul: ({children}) => <ul className="list-disc pl-6 mb-3">{children}</ul>,
+              ol: ({children}) => <ol className="list-decimal pl-6 mb-3">{children}</ol>,
+              li: ({children}) => <li className="mb-1">{children}</li>,
+              code: ({node, ...props}) => <code className="bg-gray-100 px-1 rounded text-[15px] font-mono" {...props} />,
+              strong: ({children}) => <span className="font-bold text-black">{children}</span>
+            }}
+          >
+            {text}
+          </ReactMarkdown>
+        </div>
       </div>
     );
   }
@@ -79,7 +144,17 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
   return null;
 }
 
-export default function ChatView({ agentId }: { agentId: string }) {
+type Props = { 
+  agentId: string;
+  onTitleUpdate?: (title: string) => void;
+  onUnreadReset?: () => void;
+  onModelSwitch?: (model: string) => void;
+  currentModel?: string;
+  isTiled?: boolean;
+};
+
+export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onModelSwitch, currentModel, isTiled }: Props) {
+  console.log(`[ChatView] Mounting for agent ${agentId}`);
   const [items, setItems] = useState<StreamItem[]>([]);
   const [status, setStatus] = useState<AgentStatus>("connecting");
   const [input, setInput] = useState("");
@@ -87,7 +162,9 @@ export default function ChatView({ agentId }: { agentId: string }) {
   
   const wsRef = useRef<WebSocket | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const isAtBottom = useRef(true);
 
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -99,10 +176,17 @@ export default function ChatView({ agentId }: { agentId: string }) {
     setLogs(prev => [...prev.slice(-3), `${new Date().toLocaleTimeString()}: ${msg}`]);
   };
 
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    // If we're within 50px of the bottom, consider it "at bottom"
+    isAtBottom.current = scrollHeight - scrollTop - clientHeight < 50;
+  };
+
   async function startRecording() {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("Microphone access is not supported.");
+        alert("Microphone access is not supported in this browser or context (e.g. requires HTTPS).");
         return;
       }
       if (isRecording) { stopRecording(); return; }
@@ -147,26 +231,101 @@ export default function ChatView({ agentId }: { agentId: string }) {
   }, []);
 
   useEffect(() => { adjustHeight(); }, [input, adjustHeight]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [items]);
+  
+  useEffect(() => { 
+    if (isAtBottom.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" }); 
+    }
+  }, [items]);
+
+  const connectedAgentIdRef = useRef<string | null>(null);
+  const callbacksRef = useRef({ onTitleUpdate, onUnreadReset });
 
   useEffect(() => {
+    callbacksRef.current = { onTitleUpdate, onUnreadReset };
+  }, [onTitleUpdate, onUnreadReset]);
+
+  useEffect(() => {
+    if (connectedAgentIdRef.current === agentId) return;
+    connectedAgentIdRef.current = agentId;
+
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${location.host}/ws/chat/${agentId}`);
     wsRef.current = ws;
 
-    ws.onopen = () => { setStatus("idle"); addLog("CONNECTED"); };
+    ws.onopen = () => { 
+      setStatus("idle"); 
+      addLog("CONNECTED"); 
+    };
     ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data) as ChatWsServerMessage;
-        if (msg.type === "history_snapshot") setItems(msg.items);
-        else if (msg.type === "stream_item") setItems(prev => [...prev, msg.item]);
-        else if (msg.type === "agent_status") setStatus(msg.status as AgentStatus);
+        if (msg.type === "history_snapshot") {
+          console.log(`[WS] Received history_snapshot with ${msg.items.length} items`);
+          setItems(msg.items);
+        } else if (msg.type === "stream_item") {
+          setItems((prev) => {
+            const item = msg.item;
+
+            // Handle streaming text deltas
+            if (item.kind === "text_delta") {
+              const last = prev[prev.length - 1];
+              if (last && last.kind === "assistant_message" && last.id === "streaming") {
+                const next = [...prev];
+                next[next.length - 1] = {
+                  ...last,
+                  text: (last.text || "") + item.text
+                };
+                return next;
+              } else {
+                return [...prev, {
+                  kind: "assistant_message",
+                  text: item.text,
+                  id: "streaming",
+                  timestamp: item.timestamp
+                }];
+              }
+            }
+
+            // Convert streaming block to final message when assistant_message arrives
+            if (item.kind === "assistant_message") {
+              const filtered = prev.filter(i => i.id !== "streaming");
+              return [...filtered, item];
+            }
+
+            // If it's a tool call that already exists, update it. Otherwise append.
+            if (item.kind === "tool_call") {
+              const existingIdx = prev.findIndex(i => i.kind === "tool_call" && i.id === item.id);
+              if (existingIdx !== -1) {
+                const next = [...prev];
+                next[existingIdx] = item;
+                return next;
+              }
+            }
+            return [...prev, item];
+          });
+        } else if (msg.type === "agent_status") {
+          setStatus(msg.status as AgentStatus);
+        } else if (msg.type === "chat_title_update") {
+          callbacksRef.current.onTitleUpdate?.(msg.title);
+        } else if (msg.type === "unread_cleared") {
+          callbacksRef.current.onUnreadReset?.();
+        }
       } catch { /* ignore */ }
     };
-    ws.onclose = () => { setStatus("error"); addLog("CLOSED"); };
+    ws.onclose = () => { 
+      setStatus("error"); 
+      addLog("CLOSED"); 
+      if (connectedAgentIdRef.current === agentId) {
+        connectedAgentIdRef.current = null;
+      }
+    };
 
     return () => {
       ws.close();
+      if (connectedAgentIdRef.current === agentId) {
+        connectedAgentIdRef.current = null;
+      }
       if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
     };
   }, [agentId]);
@@ -183,6 +342,7 @@ export default function ChatView({ agentId }: { agentId: string }) {
     wsRef.current.send(JSON.stringify({ type: "user_input", text }));
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    isAtBottom.current = true; // Force scroll to bottom on send
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -203,7 +363,11 @@ export default function ChatView({ agentId }: { agentId: string }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 touch-pan-y overscroll-contain">
+      <div 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-10 py-6 space-y-4 touch-pan-y overscroll-contain"
+      >
         {messageGroups.map((group, gIdx) => (
           <div key={gIdx} className="space-y-1">
             {group.items.map((item, iIdx) => (
