@@ -167,14 +167,8 @@ export default function App() {
         ${currentScene === 'chat' ? 'hidden lg:flex' : 'flex'}
       `}>
         
-        {/* Desktop Branding Header */}
-        <div className="hidden lg:flex px-6 pt-6 pb-2 items-center gap-2">
-          <div className="w-5 h-5 bg-[#3478F6] rounded-md flex items-center justify-center text-[10px] font-bold text-white shadow-sm shadow-[#3478F6]/20">M</div>
-          <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">aiMessage</span>
-        </div>
-        
         {/* Navigation Header */}
-        <div className="pt-12 lg:pt-4 px-6 pb-2 flex flex-col items-start gap-0.5">
+        <div className="pt-12 lg:pt-8 px-6 pb-2 flex flex-col items-start gap-0.5">
           {viewStack.length === 1 && (
             <h1 className="text-[28px] lg:text-[20px] font-bold tracking-tight text-gray-900 px-1">Projects</h1>
           )}
@@ -188,7 +182,7 @@ export default function App() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m15 18-6-6 6-6"/>
                 </svg>
-                <span className="text-[15px] lg:text-[13px] font-medium">
+                <span className="text-[15px] lg:text-[14px] font-medium">
                   {viewStack[viewStack.length - 2] === 'projects' ? 'Projects' : unreadTotal || ''}
                 </span>
               </button>
@@ -209,14 +203,14 @@ export default function App() {
                     <div
                       key={project.key}
                       onClick={() => openProject(project)}
-                      className="flex items-center cursor-pointer group hover:bg-black/[0.03] active:bg-black/[0.05] rounded-xl mx-1 transition-all duration-200 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1"
+                      className="flex items-center cursor-pointer group hover:bg-black/[0.03] active:bg-black/[0.05] rounded-xl mx-1 transition-all duration-200 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5"
                     >
-                      <div className="w-9 h-9 lg:w-8 lg:h-8 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 ml-2 mr-3 flex-shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 ml-2 mr-3 flex-shrink-0">
                         {initials}
                       </div>
                       <div className="flex-1 min-w-0 pr-4">
                         <div className="flex justify-between items-baseline">
-                          <span className="font-bold text-[15px] lg:text-[13px] truncate">{project.name}</span>
+                          <span className="font-bold text-[15px] lg:text-[14px] truncate">{project.name}</span>
                           <span className="text-[12px] lg:text-[11px] text-gray-400 font-medium">Now</span>
                         </div>
                         <div className="text-[13px] lg:text-[12px] text-gray-500 truncate">
@@ -233,6 +227,7 @@ export default function App() {
           ) : (
             /* Scene 2: Messages List */
             <div className="space-y-0.5">
+              {/* Active Agents */}
               {projectAgents
                 .filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()))
                 .map((agent) => {
@@ -242,31 +237,31 @@ export default function App() {
                     <div
                       key={agent.id}
                       onClick={() => toggleAgentOnStage(agent.id)}
-                      className={`flex items-center cursor-pointer group transition-all duration-300 relative border-b border-black/[0.05] last:border-transparent py-2 lg:py-1 ${
+                      className={`flex items-center cursor-pointer group transition-all duration-300 relative border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5 ${
                         isSelected ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" : "hover:bg-black/[0.03] rounded-xl mx-1"
                       }`}
                     >
                       <div className="w-2.5 flex-shrink-0 flex justify-center ml-1">
                         {agent.unreadCount > 0 && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-[#3478F6]'}`} />}
                       </div>
-                      <div className={`w-9 h-9 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-[12px] lg:text-[11px] font-bold flex-shrink-0 mr-3 ${
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] lg:text-[11px] font-bold flex-shrink-0 mr-3 ${
                         isSelected ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500'
                       }`}>
                         {initials}
                       </div>
                       <div className="flex-1 min-w-0 pr-4">
                         <div className="flex justify-between items-baseline">
-                          <span className={`font-bold text-[15px] lg:text-[13px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                          <span className={`font-bold text-[15px] lg:text-[14px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
                             {agent.title}
                           </span>
                           <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
                             <span className={`text-[12px] lg:text-[11px] font-medium transition-opacity duration-200 group-hover:opacity-0 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
                               Now
                             </span>
-                            <div className="absolute right-0 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center">
+                            <div className="absolute right-0 flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center justify-center h-full">
                               <button
                                 onClick={(e) => { e.stopPropagation(); killAgent(agent); }}
-                                className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm group/btn flex-shrink-0"
+                                className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm group/btn flex-shrink-0"
                               >
                                 <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
                                   <path d="M18 6 6 18M6 6l12 12"/>
@@ -275,7 +270,7 @@ export default function App() {
                               {!isSelected && activeAgentIds.length < 4 && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); toggleAgentOnStage(agent.id, true); }}
-                                  className="w-4 h-4 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm group/btn flex-shrink-0"
+                                  className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm group/btn flex-shrink-0"
                                 >
                                   <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
                                     <path d="M12 5v14M5 12h14"/>
@@ -293,6 +288,7 @@ export default function App() {
                   );
                 })}
 
+              {/* Past Sessions */}
               {sessions
                 .filter(s => (s.title || s.id).toLowerCase().includes(searchQuery.toLowerCase()))
                 .map((session) => {
@@ -307,22 +303,22 @@ export default function App() {
                     <div
                       key={session.id}
                       onClick={() => startAgent(session.id)}
-                      className={`flex items-center cursor-pointer group transition-all duration-300 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1 ${
+                      className={`flex items-center cursor-pointer group transition-all duration-300 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5 ${
                         isSelected ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" : "hover:bg-black/[0.03] rounded-xl mx-1"
                       }`}
                     >
                       <div className="w-3 flex-shrink-0" />
-                      <div className={`w-9 h-9 lg:w-8 lg:h-8 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 mr-3 flex-shrink-0`}>
+                      <div className={`w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 mr-3 flex-shrink-0`}>
                         {initials}
                       </div>
                       <div className="flex-1 min-w-0 pr-4">
                         <div className="flex justify-between items-baseline">
-                          <span className={`font-bold text-[15px] lg:text-[13px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>{session.title ?? session.id.slice(0, 8)}</span>
+                          <span className={`font-bold text-[15px] lg:text-[14px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>{session.title ?? session.id.slice(0, 8)}</span>
                           <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
                             <span className="text-[12px] lg:text-[11px] text-gray-400 font-medium transition-opacity duration-200 group-hover:opacity-0">{timestampStr}</span>
-                            <div className="absolute right-0 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center">
-                              <button onClick={(e) => { e.stopPropagation(); }} className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-                              <button onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }} className="w-4 h-4 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M12 5v14M5 12h14"/></svg></button>
+                            <div className="absolute right-0 flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center justify-center h-full">
+                              <button onClick={(e) => { e.stopPropagation(); }} className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                              <button onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }} className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M12 5v14M5 12h14"/></svg></button>
                             </div>
                           </div>
                         </div>
@@ -336,9 +332,9 @@ export default function App() {
         </div>
 
         {/* Floating Search & Compose Dock */}
-        <div className="absolute bottom-8 left-0 right-0 px-6 flex items-center gap-3 z-20 pointer-events-none">
-          <div className="flex-1 h-14 bg-white/95 backdrop-blur-2xl rounded-full border border-black/[0.03] shadow-[0_4px_24px_rgba(0,0,0,0.08)] flex items-center px-4 pointer-events-auto">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-900 mr-2 flex-shrink-0">
+        <div className="absolute bottom-8 left-0 right-0 px-6 lg:px-10 flex items-center gap-2 z-20 pointer-events-none">
+          <div className="flex-1 h-10 bg-white/95 backdrop-blur-2xl rounded-full border border-black/[0.03] shadow-[0_4px_24px_rgba(0,0,0,0.08)] flex items-center px-3 pointer-events-auto">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-900 mr-2 flex-shrink-0">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
             </svg>
             <input 
@@ -346,19 +342,19 @@ export default function App() {
               placeholder="Search" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-[18px] w-full text-gray-900 placeholder-gray-400 font-normal" 
+              className="bg-transparent border-none outline-none text-[16px] w-full text-gray-900 placeholder-gray-400 font-normal" 
             />
             <div className="p-1 text-gray-900 flex-shrink-0">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/><path d="M8 23h8"/>
               </svg>
             </div>
           </div>
           <button
             onClick={() => startAgent()}
-            className="w-14 h-14 rounded-full bg-white/95 backdrop-blur-2xl border border-black/[0.03] shadow-[0_4px_24px_rgba(0,0,0,0.08)] text-gray-900 flex items-center justify-center pointer-events-auto hover:bg-white active:scale-95 transition-all flex-shrink-0"
+            className="w-10 h-10 rounded-full bg-white/95 backdrop-blur-2xl border border-black/[0.03] shadow-[0_4px_24px_rgba(0,0,0,0.08)] text-gray-900 flex items-center justify-center pointer-events-auto hover:bg-white active:scale-95 transition-all flex-shrink-0"
           >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </button>
@@ -393,8 +389,8 @@ export default function App() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity min-w-[60px] justify-end">
-                      {agent && <button onClick={(e) => { e.stopPropagation(); killAgent(agent); }} className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
-                      <button onClick={(e) => { e.stopPropagation(); removeFromStage(id); }} className="w-4 h-4 rounded-full bg-[#ffbd2e] flex items-center justify-center shadow-sm flex-shrink-0"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M5 12h14"/></svg></button>
+                      {agent && <button onClick={(e) => { e.stopPropagation(); killAgent(agent); }} className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
+                      <button onClick={(e) => { e.stopPropagation(); removeFromStage(id); }} className="w-4 h-4 rounded-full bg-[#ffbd2e] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M5 12h14"/></svg></button>
                     </div>
                   </div>
                   <div className="flex-1 overflow-hidden">
