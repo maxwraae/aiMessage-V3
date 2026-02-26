@@ -71,9 +71,11 @@ import os
 # MLX Whisper is optimized for Apple Silicon and highly reliable
 def transcribe(audio_path):
     # Using the Turbo model for the best balance of speed and accuracy
+    # Forcing language="en" to ensure consistently English output
     result = mlx_whisper.transcribe(
         audio_path, 
-        path_or_hf_repo="mlx-community/whisper-large-v3-turbo"
+        path_or_hf_repo="mlx-community/whisper-large-v3-turbo",
+        language="en"
     )
     return result["text"].strip()
 
