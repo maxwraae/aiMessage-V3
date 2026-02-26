@@ -251,6 +251,44 @@ const server = createServer((req, res) => {
 
   if (req.method !== "GET") { res.writeHead(404); res.end(); return; }
 
+  if (req.url === "/debug-chat") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font:17px/1.4 -apple-system,sans-serif;padding:20px;max-width:600px;margin:0 auto}
+#log{height:60vh;overflow-y:auto;background:#f5f5f5;border-radius:12px;padding:12px;margin-bottom:12px;font-size:14px}
+.row{display:flex;gap:8px}input{flex:1;font-size:17px;padding:10px 16px;border-radius:22px;border:1px solid #ddd;outline:none}
+button{padding:10px 20px;border-radius:22px;border:none;background:#007AFF;color:#fff;font-size:17px;cursor:pointer}</style></head>
+<body><h3>Debug Chat</h3><div id="log"></div><div class="row"><input id="msg" placeholder="Type here..." enterkeyhint="send">
+<button id="send">Send</button></div>
+<script>
+const log=document.getElementById('log'),input=document.getElementById('msg'),btn=document.getElementById('send');
+function addLog(t,c){const d=document.createElement('div');d.textContent=t;d.style.color=c||'#333';log.appendChild(d);log.scrollTop=log.scrollHeight;}
+const agents=fetch('/api/agents').then(r=>r.json());
+agents.then(list=>{
+  if(!list.length){addLog('No agents found','red');return;}
+  const id=list[0].id;
+  addLog('Connecting to agent: '+id+'...');
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  const ws=new WebSocket(proto+'//'+location.host+'/ws/chat/'+id);
+  ws.onopen=()=>addLog('WS CONNECTED','green');
+  ws.onclose=(e)=>addLog('WS CLOSED code='+e.code,'red');
+  ws.onerror=(e)=>addLog('WS ERROR','red');
+  ws.onmessage=(e)=>{
+    try{const m=JSON.parse(e.data);
+      if(m.type==='history_snapshot')addLog('Got history: '+m.items.length+' items','blue');
+      else if(m.type==='stream_item')addLog((m.item.kind==='user_message'?'You: ':'Agent: ')+(m.item.text||m.item.kind),'#333');
+      else addLog('Server: '+m.type,'gray');
+    }catch(err){addLog('Parse error: '+err,'red');}
+  };
+  function send(){const t=input.value.trim();if(!t)return;if(ws.readyState!==1){addLog('WS not open (state='+ws.readyState+')','red');return;}
+    ws.send(JSON.stringify({type:'user_input',text:t}));addLog('SENT: '+t,'green');input.value='';}
+  btn.onclick=send;
+  input.onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();send();}};
+});
+</script></body></html>`);
+    return;
+  }
+
   const urlPath = req.url === "/" ? "/index.html" : (req.url?.split("?")[0] ?? "/index.html");
   const filePath = join(DIST, urlPath);
 

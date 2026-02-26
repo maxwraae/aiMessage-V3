@@ -197,6 +197,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
   const bottomRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     return () => {
@@ -260,16 +261,17 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
 
   function sendUserMessage() {
     const text = input.trim();
-    if (!text || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    if (!text) return;
     
-    // Maintain focus on mobile
-    inputRef.current?.focus();
-
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      setStatus("error");
+      return;
+    }
+    
     const msg: ChatWsClientMessage = { type: "user_input", text };
     wsRef.current.send(JSON.stringify(msg));
     
     setInput("");
-    setTimeout(() => inputRef.current?.focus(), 10);
   }
 
   async function startRecording() {
@@ -335,20 +337,30 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
     if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      // Form onSubmit will handle this
+    }
+  }
+
   const isThinking = status === "thinking";
-  const canSend = input.trim().length > 0 && status !== "thinking" && status !== "connecting";
+  const isConnecting = status === "connecting";
+  const isError = status === "error";
+  const canSend = input.trim().length > 0 && !isThinking && !isConnecting;
   const messageGroups = groupMessages(items);
 
   return (
     <div className="flex flex-col h-full bg-transparent min-h-0 relative">
       {/* Messages */}
       <div className={`flex-1 overflow-y-auto ${isTiled ? "px-4" : "px-8"} pt-8 pb-32 space-y-6 min-h-0 touch-pan-y overscroll-contain relative z-10`} style={{ WebkitOverflowScrolling: "touch" }}>
-        {messageGroups.length === 0 && status !== "connecting" && (
+        {(isConnecting || (messageGroups.length === 0 && !isThinking)) && (
           <div className="flex flex-col items-center justify-center h-48 space-y-4 opacity-20 pointer-events-none">
             <div className="w-12 h-12 rounded-full border-2 border-dashed border-white flex items-center justify-center">
-              <div className="w-4 h-4 rounded-full bg-white opacity-40 animate-pulse" />
+              <div className={`w-4 h-4 rounded-full ${isConnecting ? 'bg-amber-400' : 'bg-white'} opacity-40 animate-pulse`} />
             </div>
-            <p className="text-sm font-medium tracking-wide uppercase">New Conversation</p>
+            <p className="text-sm font-medium tracking-wide uppercase">
+              {isConnecting ? "Connecting..." : "New Conversation"}
+            </p>
           </div>
         )}
         {messageGroups.map((group, gIdx) => (
@@ -367,57 +379,61 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
             </div>
           </div>
         )}
+        {isError && (
+          <div className="flex justify-center my-4">
+            <span className="text-[10px] text-red-400 font-bold uppercase tracking-widest bg-red-50/10 px-3 py-1 rounded-full border border-red-400/20">
+              Connection Lost
+            </span>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
       {/* Floating Search Dock Mirror */}
-      <div className="px-6 pb-8 pt-2 lg:px-10 flex items-end gap-2 z-[100] relative">
+      <div className="px-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-2 lg:px-10 flex items-end gap-2 z-[100] relative bg-white lg:bg-transparent">
         <form 
+          ref={formRef}
           onSubmit={(e) => {
             e.preventDefault();
-            sendUserMessage();
+            if (canSend) sendUserMessage();
           }}
           className="flex-1 min-h-[44px] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] rounded-[22px] border border-black/[0.03] flex items-center px-3 py-1.5"
         >
           <input 
             ref={inputRef}
             type="text"
-            placeholder={isTranscribing ? "Transcribing..." : "iMessage"} 
+            placeholder={isTranscribing ? "Transcribing..." : isConnecting ? "Connecting..." : "iMessage"} 
             value={input}
             enterKeyHint="send"
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={isTranscribing}
-            className={`bg-transparent border-none outline-none text-[17px] flex-1 text-gray-900 placeholder-gray-400 font-normal py-1 ${isTranscribing ? 'opacity-50' : ''}`} 
+            className={`bg-transparent border-none outline-none text-[17px] flex-1 text-gray-900 placeholder-gray-400 font-normal py-1 ${isTranscribing || isConnecting ? 'opacity-50' : ''}`} 
           />
           
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Microphone - only shows when empty */}
-            {!input.trim() && (
-              <button 
-                type="button"
-                onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }} 
-                disabled={isTranscribing}
-                className={`p-1 transition-all duration-300 cursor-pointer ${isRecording ? 'text-red-500 scale-110' : 'text-gray-400 hover:text-gray-600'}`}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isRecording ? 'animate-pulse' : ''}>
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <path d="M12 19v4"/>
-                  <path d="M8 23h8"/>
-                </svg>
-              </button>
-            )}
-
-            {/* Send Button - only shows when text exists */}
-            {input.trim() && (
-              <button 
-                type="submit"
-                className="w-8 h-8 rounded-full bg-[#007AFF] text-white flex items-center justify-center shadow-sm active:scale-90 transition-all flex-shrink-0 cursor-pointer"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-              </button>
-            )}
-          </div>
+          {input.trim() ? (
+            <button
+              type="submit"
+              disabled={!canSend}
+              className="w-8 h-8 rounded-full bg-[#007AFF] text-white flex items-center justify-center shadow-sm active:scale-90 disabled:opacity-30 disabled:grayscale transition-all flex-shrink-0 cursor-pointer"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => isRecording ? stopRecording() : startRecording()}
+              disabled={isTranscribing}
+              className={`w-8 h-8 p-1 flex items-center justify-center cursor-pointer ${isRecording ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isRecording ? 'animate-pulse' : ''}>
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <path d="M12 19v4"/>
+                <path d="M8 23h8"/>
+              </svg>
+            </button>
+          )}
         </form>
       </div>
     </div>

@@ -3,3 +3,3423 @@
 > tsx server.ts
 
 aiMessage V3 (Headless) listening on http://0.0.0.0:7777
+[Request] HEAD /
+[LOG] aiMessage V3 (Headless) listening on http://0.0.0.0:7777
+[LOG] [Tailscale] Ensuring HTTPS tunnel is active...
+[LOG] [Tailscale] External HTTPS URL: https://maxs-macbook-pro.tail591d8a.ts.net/
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-2vG26qp1.js
+[LOG] [Request] GET /assets/index-BSgBwZDs.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] POST /api/transcribe
+[LOG] [Transcribe] Processing /var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772095865868.webm...
+[ERR] [Transcribe] Local Parakeet failed: Command failed: "/Users/maxwraae/.claude/models/venv/bin/python" "/Users/maxwraae/.claude/models/transcribe.py" "/var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772095865868.webm"
+[NeMo W 2026-02-26 09:51:09 megatron_init:62] Megatron num_microbatches_calculator not found, using Apex version.
+W0226 09:51:09.543000 86987 venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+OneLogger: Setting error_handling_strategy to DISABLE_QUIETLY_AND_REPORT_METRIC_ERROR for rank (rank=0) with OneLogger disabled. To override: explicitly set error_handling_strategy parameter.
+No exporters were provided. This means that no telemetry data will be collected.
+[NeMo W 2026-02-26 09:51:10 nemo_logging:364] /Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/pydub/utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+      warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+    
+[NeMo W 2026-02-26 09:51:12 modelPT:188] If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() method and provide a valid configuration file to setup the train data loader.
+    Train config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 1
+    shuffle: true
+    num_workers: 8
+    pin_memory: true
+    max_duration: 20
+    min_duration: 0.1
+    is_tarred: true
+    tarred_audio_filepaths: null
+    shuffle_n: 2048
+    bucketing_strategy: fully_randomized
+    bucketing_batch_size:
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    defer_setup: true
+    
+[NeMo W 2026-02-26 09:51:12 modelPT:195] If you intend to do validation, please call the ModelPT.setup_validation_data() or ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to setup the validation data loader(s). 
+    Validation config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 16
+    shuffle: false
+    use_start_end_token: false
+    num_workers: 8
+    pin_memory: true
+    
+[NeMo W 2026-02-26 09:51:12 modelPT:202] Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method and provide a valid configuration file to setup the test data loader(s).
+    Test config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 16
+    shuffle: false
+    use_start_end_token: false
+    num_workers: 8
+    pin_memory: true
+    
+[NeMo W 2026-02-26 09:51:16 dataloader:826] The following configuration keys are ignored by Lhotse dataloader: use_start_end_token
+[NeMo W 2026-02-26 09:51:16 dataloader:523] You are using a non-tarred dataset and requested tokenization during data sampling (pretokenize=True). This will cause the tokenization to happen in the main (GPU) process,possibly impacting the training speed if your tokenizer is very large.If the impact is noticable, set pretokenize=False in dataloader config.(note: that will disable token-per-second filtering and 2D bucketing features)
+Transcribing: 0it [00:00, ?it/s]Transcribing: 0it [00:00, ?it/s]
+Traceback (most recent call last):
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 747, in info
+    return candidates[0].info(path_or_fd=path_or_fd)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 502, in info
+    return torchaudio_ffmpeg_streamer_info(path_or_fd)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 903, in torchaudio_ffmpeg_streamer_info
+    from torchaudio.io import StreamReader
+ModuleNotFoundError: No module named 'torchaudio'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/maxwraae/.claude/models/transcribe.py", line 23, in <module>
+    text = transcribe(sys.argv[1])
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/transcribe.py", line 12, in transcribe
+    results = model.transcribe([audio_path])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/models/rnnt_models.py", line 317, in transcribe
+    return super().transcribe(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/parts/mixins/transcription.py", line 298, in transcribe
+    for processed_outputs in generator:
+                             ^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/parts/mixins/transcription.py", line 393, in transcribe_generator
+    for test_batch in tqdm(dataloader, desc="Transcribing", disable=not verbose):
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/tqdm/std.py", line 1181, in __iter__
+    for obj in iterable:
+               ^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 741, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 800, in _next_data
+    index = self._next_index()  # may raise StopIteration
+            ^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 731, in _next_index
+    return next(self._sampler_iter)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/base.py", line 297, in __next__
+    batch = self._next_batch()
+            ^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 231, in _next_batch
+    batch = next(self.cuts_iter)
+            ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 285, in __iter__
+    yield self._collect_batch()
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 311, in _collect_batch
+    next_cut_or_tpl = next(self.cuts_iter)
+                      ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 377, in __iter__
+    for item in self.iterator:
+                ^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  [Previous line repeated 5 more times]
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 713, in __iter__
+    for cuts in self.iterator:
+                ^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 120, in __iter__
+    cut = self._create_cut(
+          ^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 155, in _create_cut
+    recording = self._create_recording(audio_path, duration, sampling_rate)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 202, in _create_recording
+    return Recording.from_file(audio_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/recording.py", line 229, in from_file
+    audio_info = info(
+                 ^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 1544, in info
+    return get_current_audio_backend().info(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 749, in info
+    raise AudioLoadingError(
+lhotse.audio.utils.AudioLoadingError: Fetching info about audio from '/var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772095865868.webm' failed. Details: <class 'ModuleNotFoundError'>: No module named 'torchaudio'
+
+[LOG] [Transcribe] Sending response to client: "(Transcription error or timeout)"
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-BSgBwZDs.css
+[LOG] [Request] GET /assets/index-Cf0QR3cl.js
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Cf0QR3cl.js
+[LOG] [Request] GET /assets/index-BSgBwZDs.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [WS] Received user_input for agent 75bc58: "what the hell"
+[LOG] [Claude] Writing to stdin for 75bc58: {"type":"user","message":{"role":"user","content":"what the hell"},"session_id":"d2173c76-2c43-4340-a24c-95261a9a58e8","parent_tool_use_id":null}
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Cf0QR3cl.js
+[LOG] [Request] GET /assets/index-BSgBwZDs.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Cf0QR3cl.js
+[LOG] [Request] GET /assets/index-BSgBwZDs.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/transcribe
+[LOG] [Transcribe] Processing /var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772095943635.webm...
+[ERR] [Transcribe] Local Parakeet failed: Command failed: "/Users/maxwraae/.claude/models/venv/bin/python" "/Users/maxwraae/.claude/models/transcribe.py" "/var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772095943635.webm"
+[NeMo W 2026-02-26 09:52:27 megatron_init:62] Megatron num_microbatches_calculator not found, using Apex version.
+W0226 09:52:27.153000 87240 venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+OneLogger: Setting error_handling_strategy to DISABLE_QUIETLY_AND_REPORT_METRIC_ERROR for rank (rank=0) with OneLogger disabled. To override: explicitly set error_handling_strategy parameter.
+No exporters were provided. This means that no telemetry data will be collected.
+[NeMo W 2026-02-26 09:52:27 nemo_logging:364] /Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/pydub/utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+      warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+    
+[NeMo W 2026-02-26 09:52:30 modelPT:188] If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() method and provide a valid configuration file to setup the train data loader.
+    Train config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 1
+    shuffle: true
+    num_workers: 8
+    pin_memory: true
+    max_duration: 20
+    min_duration: 0.1
+    is_tarred: true
+    tarred_audio_filepaths: null
+    shuffle_n: 2048
+    bucketing_strategy: fully_randomized
+    bucketing_batch_size:
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    defer_setup: true
+    
+[NeMo W 2026-02-26 09:52:30 modelPT:195] If you intend to do validation, please call the ModelPT.setup_validation_data() or ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to setup the validation data loader(s). 
+    Validation config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 16
+    shuffle: false
+    use_start_end_token: false
+    num_workers: 8
+    pin_memory: true
+    
+[NeMo W 2026-02-26 09:52:30 modelPT:202] Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method and provide a valid configuration file to setup the test data loader(s).
+    Test config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 16
+    shuffle: false
+    use_start_end_token: false
+    num_workers: 8
+    pin_memory: true
+    
+[NeMo W 2026-02-26 09:52:34 dataloader:826] The following configuration keys are ignored by Lhotse dataloader: use_start_end_token
+[NeMo W 2026-02-26 09:52:34 dataloader:523] You are using a non-tarred dataset and requested tokenization during data sampling (pretokenize=True). This will cause the tokenization to happen in the main (GPU) process,possibly impacting the training speed if your tokenizer is very large.If the impact is noticable, set pretokenize=False in dataloader config.(note: that will disable token-per-second filtering and 2D bucketing features)
+Transcribing: 0it [00:00, ?it/s]Transcribing: 0it [00:00, ?it/s]
+Traceback (most recent call last):
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 747, in info
+    return candidates[0].info(path_or_fd=path_or_fd)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 502, in info
+    return torchaudio_ffmpeg_streamer_info(path_or_fd)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 903, in torchaudio_ffmpeg_streamer_info
+    from torchaudio.io import StreamReader
+ModuleNotFoundError: No module named 'torchaudio.io'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/maxwraae/.claude/models/transcribe.py", line 23, in <module>
+    text = transcribe(sys.argv[1])
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/transcribe.py", line 12, in transcribe
+    results = model.transcribe([audio_path])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/models/rnnt_models.py", line 317, in transcribe
+    return super().transcribe(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/parts/mixins/transcription.py", line 298, in transcribe
+    for processed_outputs in generator:
+                             ^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/parts/mixins/transcription.py", line 393, in transcribe_generator
+    for test_batch in tqdm(dataloader, desc="Transcribing", disable=not verbose):
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/tqdm/std.py", line 1181, in __iter__
+    for obj in iterable:
+               ^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 741, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 800, in _next_data
+    index = self._next_index()  # may raise StopIteration
+            ^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 731, in _next_index
+    return next(self._sampler_iter)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/base.py", line 297, in __next__
+    batch = self._next_batch()
+            ^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 231, in _next_batch
+    batch = next(self.cuts_iter)
+            ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 285, in __iter__
+    yield self._collect_batch()
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 311, in _collect_batch
+    next_cut_or_tpl = next(self.cuts_iter)
+                      ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 377, in __iter__
+    for item in self.iterator:
+                ^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  [Previous line repeated 5 more times]
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 713, in __iter__
+    for cuts in self.iterator:
+                ^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 120, in __iter__
+    cut = self._create_cut(
+          ^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 155, in _create_cut
+    recording = self._create_recording(audio_path, duration, sampling_rate)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 202, in _create_recording
+    return Recording.from_file(audio_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/recording.py", line 229, in from_file
+    audio_info = info(
+                 ^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 1544, in info
+    return get_current_audio_backend().info(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 749, in info
+    raise AudioLoadingError(
+lhotse.audio.utils.AudioLoadingError: Fetching info about audio from '/var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772095943635.webm' failed. Details: <class 'ModuleNotFoundError'>: No module named 'torchaudio.io'
+
+[LOG] [Transcribe] Sending response to client: "(Transcription error or timeout)"
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] aiMessage V3 (Headless) listening on http://0.0.0.0:7777
+[LOG] [Tailscale] Ensuring HTTPS tunnel is active...
+[LOG] [Tailscale] External HTTPS URL: https://maxs-macbook-pro.tail591d8a.ts.net/
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-CR_gRzE3.js
+[LOG] [Request] GET /assets/index-BSgBwZDs.css
+[LOG] [Request] GET /assets/index-DOMReB0U.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-CR_gRzE3.js
+[LOG] [Request] GET /assets/index-DOMReB0U.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [WS] Received user_input for agent bcff84: "still"
+[LOG] [Claude] Writing to stdin for bcff84: {"type":"user","message":{"role":"user","content":"still"},"session_id":"d2173c76-2c43-4340-a24c-95261a9a58e8","parent_tool_use_id":null}
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-CR_gRzE3.js
+[LOG] [Request] GET /assets/index-DOMReB0U.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] POST /api/transcribe
+[LOG] [Transcribe] Processing /var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772096072785.webm...
+[ERR] [Transcribe] Local Parakeet failed: Command failed: "/Users/maxwraae/.claude/models/venv/bin/python" "/Users/maxwraae/.claude/models/transcribe.py" "/var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772096072785.webm"
+[NeMo W 2026-02-26 09:54:36 megatron_init:62] Megatron num_microbatches_calculator not found, using Apex version.
+W0226 09:54:36.619000 90654 venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+OneLogger: Setting error_handling_strategy to DISABLE_QUIETLY_AND_REPORT_METRIC_ERROR for rank (rank=0) with OneLogger disabled. To override: explicitly set error_handling_strategy parameter.
+No exporters were provided. This means that no telemetry data will be collected.
+[NeMo W 2026-02-26 09:54:39 modelPT:188] If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() method and provide a valid configuration file to setup the train data loader.
+    Train config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 1
+    shuffle: true
+    num_workers: 8
+    pin_memory: true
+    max_duration: 20
+    min_duration: 0.1
+    is_tarred: true
+    tarred_audio_filepaths: null
+    shuffle_n: 2048
+    bucketing_strategy: fully_randomized
+    bucketing_batch_size:
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    - 64
+    - 64
+    - 32
+    - 32
+    - 32
+    - 32
+    - 16
+    - 16
+    defer_setup: true
+    
+[NeMo W 2026-02-26 09:54:39 modelPT:195] If you intend to do validation, please call the ModelPT.setup_validation_data() or ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to setup the validation data loader(s). 
+    Validation config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 16
+    shuffle: false
+    use_start_end_token: false
+    num_workers: 8
+    pin_memory: true
+    
+[NeMo W 2026-02-26 09:54:39 modelPT:202] Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method and provide a valid configuration file to setup the test data loader(s).
+    Test config : 
+    manifest_filepath: null
+    sample_rate: 16000
+    batch_size: 16
+    shuffle: false
+    use_start_end_token: false
+    num_workers: 8
+    pin_memory: true
+    
+[NeMo W 2026-02-26 09:54:44 dataloader:826] The following configuration keys are ignored by Lhotse dataloader: use_start_end_token
+[NeMo W 2026-02-26 09:54:44 dataloader:523] You are using a non-tarred dataset and requested tokenization during data sampling (pretokenize=True). This will cause the tokenization to happen in the main (GPU) process,possibly impacting the training speed if your tokenizer is very large.If the impact is noticable, set pretokenize=False in dataloader config.(note: that will disable token-per-second filtering and 2D bucketing features)
+Transcribing: 0it [00:00, ?it/s]Transcribing: 0it [00:00, ?it/s]
+Traceback (most recent call last):
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 747, in info
+    return candidates[0].info(path_or_fd=path_or_fd)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 502, in info
+    return torchaudio_ffmpeg_streamer_info(path_or_fd)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 903, in torchaudio_ffmpeg_streamer_info
+    from torchaudio.io import StreamReader
+ModuleNotFoundError: No module named 'torchaudio.io'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/maxwraae/.claude/models/transcribe.py", line 23, in <module>
+    text = transcribe(sys.argv[1])
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/transcribe.py", line 12, in transcribe
+    results = model.transcribe([audio_path])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/models/rnnt_models.py", line 317, in transcribe
+    return super().transcribe(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/parts/mixins/transcription.py", line 298, in transcribe
+    for processed_outputs in generator:
+                             ^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/asr/parts/mixins/transcription.py", line 393, in transcribe_generator
+    for test_batch in tqdm(dataloader, desc="Transcribing", disable=not verbose):
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/tqdm/std.py", line 1181, in __iter__
+    for obj in iterable:
+               ^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 741, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 800, in _next_data
+    index = self._next_index()  # may raise StopIteration
+            ^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 731, in _next_index
+    return next(self._sampler_iter)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/base.py", line 297, in __next__
+    batch = self._next_batch()
+            ^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 231, in _next_batch
+    batch = next(self.cuts_iter)
+            ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 285, in __iter__
+    yield self._collect_batch()
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 311, in _collect_batch
+    next_cut_or_tpl = next(self.cuts_iter)
+                      ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/dataset/sampling/dynamic.py", line 377, in __iter__
+    for item in self.iterator:
+                ^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  [Previous line repeated 5 more times]
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 713, in __iter__
+    for cuts in self.iterator:
+                ^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/cut/set.py", line 2733, in __iter__
+    yield from self.cuts
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/lazy.py", line 683, in __iter__
+    yield from map(self.fn, self.iterator)
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 120, in __iter__
+    cut = self._create_cut(
+          ^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 155, in _create_cut
+    recording = self._create_recording(audio_path, duration, sampling_rate)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/nemo/collections/common/data/lhotse/nemo_adapters.py", line 202, in _create_recording
+    return Recording.from_file(audio_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/recording.py", line 229, in from_file
+    audio_info = info(
+                 ^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 1544, in info
+    return get_current_audio_backend().info(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwraae/.claude/models/venv/lib/python3.12/site-packages/lhotse/audio/backend.py", line 749, in info
+    raise AudioLoadingError(
+lhotse.audio.utils.AudioLoadingError: Fetching info about audio from '/var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772096072785.webm' failed. Details: <class 'ModuleNotFoundError'>: No module named 'torchaudio.io'
+
+[LOG] [Transcribe] Sending response to client: "(Transcription error or timeout)"
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-c7Npfw5l.js
+[LOG] [Request] GET /assets/index-BfsziIKI.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] aiMessage V3 (Headless) listening on http://0.0.0.0:7777
+[LOG] [Tailscale] Ensuring HTTPS tunnel is active...
+[LOG] [Tailscale] External HTTPS URL: https://maxs-macbook-pro.tail591d8a.ts.net/
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-c7Npfw5l.js
+[LOG] [Request] GET /assets/index-BfsziIKI.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-c7Npfw5l.js
+[LOG] [Request] GET /assets/index-BfsziIKI.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [WS] Received user_input for agent 110e39: "Hi"
+[LOG] [Claude] Writing to stdin for 110e39: {"type":"user","message":{"role":"user","content":"Hi"},"session_id":"d2173c76-2c43-4340-a24c-95261a9a58e8","parent_tool_use_id":null}
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [WS] Received user_input for agent 110e39: "sdfs"
+[LOG] [Claude] Writing to stdin for 110e39: {"type":"user","message":{"role":"user","content":"sdfs"},"session_id":"d2173c76-2c43-4340-a24c-95261a9a58e8","parent_tool_use_id":null}
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-BgHn_bto.js
+[LOG] [Request] GET /assets/index-CUaL2hMn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-BgHn_bto.js
+[LOG] [Request] GET /assets/index-CUaL2hMn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [WS] Received user_input for agent 110e39: "Come"
+[LOG] [Claude] Writing to stdin for 110e39: {"type":"user","message":{"role":"user","content":"Come"},"session_id":"d2173c76-2c43-4340-a24c-95261a9a58e8","parent_tool_use_id":null}
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DvF34l9w.js
+[LOG] [Request] GET /assets/index-CykSKzm5.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] POST /api/transcribe
+[LOG] [Transcribe] Processing /var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772096416240.webm...
+[LOG] [Transcribe] Success: "Could you help me run to the market?"
+[LOG] [Debug] Saved to /Users/maxwraae/projects/aiMessage-V3/debug/audio/voice-1772096418292.webm and log.
+[LOG] [Transcribe] Sending response to client: "Could you help me run to the market?"
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DvF34l9w.js
+[LOG] [Request] GET /assets/index-CykSKzm5.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] POST /api/transcribe
+[LOG] [Transcribe] Processing /var/folders/qz/4w152sr52t978r63v84jwdkc0000gn/T/voice-1772096435628.webm...
+[LOG] [Transcribe] Success: "What is the meaning of life?"
+[LOG] [Debug] Saved to /Users/maxwraae/projects/aiMessage-V3/debug/audio/voice-1772096437601.webm and log.
+[LOG] [Transcribe] Sending response to client: "What is the meaning of life?"
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DvF34l9w.js
+[LOG] [Request] GET /assets/index-CykSKzm5.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [WS] Received user_input for agent 110e39: "Jakixf"
+[LOG] [Claude] Writing to stdin for 110e39: {"type":"user","message":{"role":"user","content":"Jakixf"},"session_id":"d2173c76-2c43-4340-a24c-95261a9a58e8","parent_tool_use_id":null}
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-CykSKzm5.css
+[LOG] [Request] GET /assets/index-DvF34l9w.js
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [WS] Received user_input for agent 110e39: "Could you help me run to the market?"
+[LOG] [Claude] Writing to stdin for 110e39: {"type":"user","message":{"role":"user","content":"Could you help me run to the market?"},"session_id":"d2173c76-2c43-4340-a24c-95261a9a58e8","parent_tool_use_id":null}
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DoB2Xzwb.css
+[LOG] [Request] GET /assets/index-B4euIeaA.js
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /assets/index-DsbYk0S0.js
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DsbYk0S0.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Dwn-dW3-.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-v2/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-DFtO3ez7.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-C22MyJwu.js
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [WS] Received user_input for agent f4a116: "sup"
+[LOG] [Claude] Writing to stdin for f4a116: {"type":"user","message":{"role":"user","content":"sup"},"session_id":"default","parent_tool_use_id":null}
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [One-Shot] Requesting smart name for agent f4a116...
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-5QlKkuVn.css
+[LOG] [Request] GET /assets/index-_wZAf0Es.js
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [WS] Received user_input for agent test-agent: "Hello, this is an automated test message."
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [WS] Received user_input for agent f4a116: "Hello, this is an automated test message."
+[LOG] [Claude] Writing to stdin for f4a116: {"type":"user","message":{"role":"user","content":"Hello, this is an automated test message."},"session_id":"71c2ee57-a5d3-4163-b6a2-253ca584b1ba","parent_tool_use_id":null}
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /assets/index-_wZAf0Es.js
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-_wZAf0Es.js
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-_wZAf0Es.js
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [WS] Received user_input for agent f4a116: "Hello, this is an automated test message."
+[LOG] [Claude] Writing to stdin for f4a116: {"type":"user","message":{"role":"user","content":"Hello, this is an automated test message."},"session_id":"71c2ee57-a5d3-4163-b6a2-253ca584b1ba","parent_tool_use_id":null}
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-_wZAf0Es.js
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /assets/index-DBf7YDtY.js
+[LOG] [Request] GET /assets/index-CEv8twQT.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-D9kjudPe.js
+[LOG] [Request] GET /assets/index-CEv8twQT.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] aiMessage V3 (Headless) listening on http://0.0.0.0:7777
+[LOG] [Tailscale] Ensuring HTTPS tunnel is active...
+[LOG] [Tailscale] External HTTPS URL: https://maxs-macbook-pro.tail591d8a.ts.net/
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-CEv8twQT.css
+[LOG] [Request] GET /assets/index-BvsZ68DK.js
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /assets/index-BvsZ68DK.js
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /assets/index-BvsZ68DK.js
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-BvsZ68DK.js
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-BvsZ68DK.js
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /assets/index-BKhFA6Gd.js
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /assets/index-507codHm.js
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] aiMessage V3 (Headless) listening on http://0.0.0.0:7777
+[LOG] [Tailscale] Ensuring HTTPS tunnel is active...
+[LOG] [Tailscale] External HTTPS URL: https://maxs-macbook-pro.tail591d8a.ts.net/
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-Bn4Txy4L.css
+[LOG] [Request] GET /assets/index-C8NLmwao.css
+[LOG] [Request] GET /assets/index-fzz9wH4x.js
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-fzz9wH4x.js
+[LOG] [Request] GET /assets/index-C8NLmwao.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /assets/index-fzz9wH4x.js
+[LOG] [Request] GET /assets/index-C8NLmwao.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /favicon.ico
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] aiMessage V3 (Headless) listening on http://0.0.0.0:7777
+[LOG] [Tailscale] Ensuring HTTPS tunnel is active...
+[LOG] [Tailscale] External HTTPS URL: https://maxs-macbook-pro.tail591d8a.ts.net/
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /%5D(https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-fzz9wH4x.js
+[LOG] [Request] GET /assets/index-C8NLmwao.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /assets/index-CrU89g5e.js
+[LOG] [Request] GET /assets/index-BSgBwZDs.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net
+[LOG] [Request] GET /assets/index-fzz9wH4x.js
+[LOG] [Request] GET /assets/index-C8NLmwao.css
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /](https://maxs-macbook-pro.tail591d8a.ts.net/debug-chat
+[LOG] [Request] GET /assets/index-C8NLmwao.css
+[LOG] [Request] GET /assets/index-fzz9wH4x.js
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /
+[LOG] [Request] GET /assets/index-fzz9wH4x.js
+[LOG] [Request] GET /assets/index-C8NLmwao.css
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] aiMessage V3 (Headless) listening on http://0.0.0.0:7777
+[LOG] [Tailscale] Ensuring HTTPS tunnel is active...
+[LOG] [Tailscale] External HTTPS URL: https://maxs-macbook-pro.tail591d8a.ts.net/
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects
+[LOG] [Request] POST /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions
+[LOG] [Request] GET /api/agents
+[LOG] [Request] GET /api/projects/-Users-maxwraae-projects-aiMessage-V3/sessions

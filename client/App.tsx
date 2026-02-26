@@ -469,7 +469,7 @@ export default function App() {
         </div>
 
         {/* Floating Search & Compose Dock */}
-        <div className="absolute bottom-8 left-0 right-0 px-6 lg:px-10 flex items-center gap-2 z-20 pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 px-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:px-10 flex items-center gap-2 z-20 pointer-events-none">
           <div className="flex-1 h-10 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] rounded-full border border-black/[0.03] flex items-center px-3 pointer-events-auto">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400 mr-2 flex-shrink-0">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
@@ -526,14 +526,11 @@ export default function App() {
                       <span className="text-[17px] font-medium">{unreadTotal || ''}</span>
                     </button>
                     <div className="flex flex-col items-center flex-1 lg:items-start lg:ml-2 min-w-0 px-2">
-                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 lg:hidden mb-0.5">
-                        {(agent?.title || "?").substring(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex items-center gap-2 max-w-full">
-                        <span className="text-[13px] lg:text-[14px] font-bold text-gray-900 truncate">
-                          {agent?.title || "Untitled Chat"}
-                        </span>
-                        {/* Model Badge/Selector */}
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 lg:hidden">
+                          {(agent?.title || "?").substring(0, 2).toUpperCase()}
+                        </div>
+                        {/* Model Avatar Bubble */}
                         <button 
                           onClick={() => {
                             const models = ['sonnet', 'haiku', 'opus'];
@@ -541,10 +538,16 @@ export default function App() {
                             const next = models[(models.indexOf(current) + 1) % models.length];
                             switchAgentModel(id, next);
                           }}
-                          className="flex-shrink-0 px-1.5 py-0.5 rounded bg-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-[#3478F6] hover:bg-[#3478F6]/10 transition-all cursor-pointer"
+                          className="w-6 h-6 rounded-full bg-[#3478F6]/10 flex items-center justify-center text-[10px] font-black uppercase text-[#3478F6] hover:bg-[#3478F6]/20 transition-all cursor-pointer shadow-sm border border-[#3478F6]/10"
+                          title={`Switch Model (Current: ${agent?.model || 'sonnet'})`}
                         >
-                          {agent?.model || 'sonnet'}
+                          {(agent?.model || 'sonnet').substring(0, 1).toUpperCase()}
                         </button>
+                      </div>
+                      <div className="flex items-center gap-2 max-w-full">
+                        <span className="text-[13px] lg:text-[14px] font-bold text-gray-900 truncate">
+                          {agent?.title || "Untitled Chat"}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity min-w-[60px] justify-end">
