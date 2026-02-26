@@ -48,20 +48,33 @@ This document provides the definitive technical specification for the **aiMessag
 ---
 
 ## **Scene 3: The Chat Interaction (Detail View)**
-*The high-fidelity interaction layer.*
+*High-fidelity developer-centric interaction layer.*
 
 ### **3.1 Header Anatomy**
 - **Navigation:** Back button `< [Project Name]`. 
 - **Identity:** Centered small avatar + Agent Title.
 
-### **3.2 Canvas & Input**
-- **Message Bubbles:** 
-    - **User:** Solid Blue (`#007AFF`), white text, bottom-right tail.
-    - **Agent:** Solid Gray (`#E9E9EB`), black text, bottom-left tail.
-- **The Pill:** Docked white pill with gray border. 
-    - Left of pill: `(+)` button.
-    - Inside pill: `[ iMessage ]` placeholder + Microphone.
-    - **Morphing:** If text exists, Microphone hides, and a Blue Send Arrow appears to the right of the pill.
+### **3.2 The Message Stream (Asymmetric Canvas)**
+- **User Messages:**
+    - **Style:** Classic iMessage Blue (`#007AFF`).
+    - **Anatomy:** Rounded bubble with bottom-right tail. White text.
+- **Agent Messages (Xcode Style):**
+    - **No Bubbles:** Raw typography directly on the white canvas.
+    - **Header Row:** 
+        - Left: "AGENT RESPONSE" (`text-[11px] font-bold text-gray-400 uppercase`).
+        - Right (Inline): "Reasoning" toggle with chevron.
+    - **Reasoning Box:** When expanded, a light hairline-bordered area below the header but above the main text.
+    - **Main Text:** `text-[18px] leading-relaxed text-gray-900 font-sans mt-2`.
+- **Tool Blocks (System Actions):**
+    - **Style:** A wide, soft-gray rectangle filling the message width.
+    - **Anatomy:** `bg-gray-50 border border-black/[0.03] rounded-xl p-4`.
+    - **Content:** Information on what the agent did (e.g., "WebSearch: Found 3 results").
+
+### **3.3 The Input Dock (The "Pill")**
+- **Layout:** `h-[50px] px-2 flex items-center bg-white border-t border-gray-200`.
+- **Left Action:** Circular `+` button.
+- **The Text Field:** Rounded-pill area with "iMessage" placeholder and internal Microphone.
+- **Morphing Send:** Blue Up-Arrow Circle appears outside the pill only when text is present.
 
 ---
 

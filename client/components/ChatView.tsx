@@ -16,68 +16,47 @@ function ToolCallItem({ item, isTiled }: ToolCallItemProps) {
     item.status === "completed" ? "bg-green-500" : "bg-red-500";
 
   return (
-    <div className="mb-2">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-2 group/tool"
-      >
-        <div className={`w-1.5 h-1.5 rounded-full ${statusColor} shadow-sm`} />
-        <span className="text-[13px] font-medium text-gray-400 group-hover/tool:text-gray-600 transition-colors">
-          {item.name}
-        </span>
-        <svg 
-          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
-          className={`text-gray-300 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+    <div className="w-full my-4">
+      <div className="bg-gray-50/50 border border-black/[0.03] rounded-xl overflow-hidden shadow-sm">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-black/[0.02] transition-colors group/tool"
         >
-          <path d="m9 18 6-6-6-6"/>
-        </svg>
-      </button>
-      {expanded && (
-        <div className="mt-2 ml-3 pl-3 border-l border-gray-100 space-y-3">
-          <div>
-            <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">Input</div>
-            <pre className="text-[12px] text-gray-500 font-mono bg-gray-50/50 p-2 rounded-lg border border-black/[0.03] overflow-x-auto">
-              {JSON.stringify(item.input, null, 2)}
-            </pre>
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${statusColor} shadow-sm`} />
+            <span className="text-[14px] font-semibold text-gray-700 uppercase tracking-wide">
+              {item.name}
+            </span>
+            <span className="text-[13px] text-gray-400 font-medium">
+              {item.status === "running" ? "is running..." : item.status === "completed" ? "completed" : "failed"}
+            </span>
           </div>
-          {item.result !== undefined && (
-            <div>
-              <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">Output</div>
-              <pre className="text-[12px] text-gray-500 font-mono bg-gray-50/50 p-2 rounded-lg border border-black/[0.03] overflow-x-auto max-h-40">
-                {typeof item.result === "string" ? item.result : JSON.stringify(item.result, null, 2)}
+          <svg 
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+            className={`text-gray-300 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+          >
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </button>
+        {expanded && (
+          <div className="px-4 pb-4 space-y-3">
+            <div className="pt-2 border-t border-black/[0.03]">
+              <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1.5">Input Parameters</div>
+              <pre className="text-[12px] text-gray-600 font-mono bg-white/50 p-3 rounded-lg border border-black/[0.02] overflow-x-auto">
+                {JSON.stringify(item.input, null, 2)}
               </pre>
             </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ThoughtItem({ item, isTiled }: ThoughtItemProps) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div className="mb-2">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-2 group/thought"
-      >
-        <span className="text-[13px] font-medium text-gray-400 group-hover/thought:text-gray-600 transition-colors">
-          Reasoning
-        </span>
-        <svg 
-          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
-          className={`text-gray-300 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
-        >
-          <path d="m9 18 6-6-6-6"/>
-        </svg>
-      </button>
-      {expanded && (
-        <div className="mt-2 ml-3 pl-3 border-l border-gray-100">
-          <p className="text-[14px] leading-relaxed text-gray-500 italic font-sans">{item.text}</p>
-        </div>
-      )}
+            {item.result !== undefined && (
+              <div>
+                <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1.5">Execution Result</div>
+                <pre className="text-[12px] text-gray-600 font-mono bg-white/50 p-3 rounded-lg border border-black/[0.02] overflow-x-auto max-h-60">
+                  {typeof item.result === "string" ? item.result : JSON.stringify(item.result, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -97,11 +76,10 @@ function groupMessages(items: StreamItem[]): MessageGroup[] {
     if (item.kind === "user_message") kind = "user";
     else if (item.kind === "system") kind = "system";
     else if (item.kind === "tool_call") kind = "tool";
-    else if (item.kind === "thought") kind = "thought";
     else if (item.kind === "error") kind = "error";
 
-    // Assistant messages and text deltas are both "agent"
-    if (item.kind === "assistant_message" || item.kind === "text_delta") kind = "agent";
+    // Assistant messages, text deltas, and thoughts are all "agent"
+    if (item.kind === "assistant_message" || item.kind === "text_delta" || item.kind === "thought") kind = "agent";
 
     const canGroup = currentGroup && 
       currentGroup.kind === kind && 
@@ -123,6 +101,8 @@ function groupMessages(items: StreamItem[]): MessageGroup[] {
 }
 
 function MessageBubble({ item, group, index, total }: { item: StreamItem; group: MessageGroup; index: number; total: number }) {
+  const [showReasoning, setShowReasoning] = useState(false);
+
   if (group.kind === "user") {
     const text = (item as any).text || "";
     let radiusClass = "bubble-user-single bubble-tail";
@@ -142,40 +122,56 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
   }
 
   if (group.kind === "agent") {
+    const isThought = item.kind === "thought";
     const text = (item as any).text || "";
-    let radiusClass = "rounded-2xl rounded-bl-sm bubble-agent-tail"; // Default tail look
-    if (total > 1) {
-      if (index === 0) radiusClass = "rounded-t-2xl rounded-br-2xl rounded-bl-sm";
-      else if (index === total - 1) radiusClass = "rounded-b-2xl rounded-tr-2xl rounded-bl-sm bubble-agent-tail";
-      else radiusClass = "rounded-l-sm rounded-r-2xl";
-    }
 
     return (
-      <div className="flex flex-col mb-1 group/agent items-start">
+      <div className="flex flex-col mb-8 items-start w-full">
         {index === 0 && (
-          <div className="flex items-center mb-1 ml-2">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider truncate flex-1">Agent Response</span>
+          <div className="flex items-center justify-between w-full mb-2">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Agent Response</span>
+            
+            {/* Reasoning Toggle - Only shown if there's a thought in the group */}
+            {group.items.some(i => i.kind === "thought") && (
+              <button
+                onClick={() => setShowReasoning(!showReasoning)}
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-[#3478F6] hover:underline"
+              >
+                {showReasoning ? "Hide reasoning" : "Show reasoning"}
+                <svg 
+                  width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+                  className={`transition-transform duration-200 ${showReasoning ? "rotate-90" : ""}`}
+                >
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </button>
+            )}
           </div>
         )}
-        <div className={`bg-[#E9E9EB] text-black px-4 py-2 shadow-sm ${radiusClass} max-w-[85%]`}>
-          <p className="text-[17px] leading-relaxed whitespace-pre-wrap break-words font-sans">{text}</p>
-        </div>
+
+        {isThought ? (
+          showReasoning && (
+            <div className="w-full mb-4 p-4 rounded-xl bg-gray-50/30 border border-black/[0.02] shadow-inner">
+              <p className="text-[15px] leading-relaxed text-gray-500 italic font-sans">{text}</p>
+            </div>
+          )
+        ) : (
+          <div className="w-full">
+            <p className="text-[18px] leading-relaxed text-gray-900 whitespace-pre-wrap break-words font-sans">{text}</p>
+          </div>
+        )}
       </div>
     );
   }
 
-  if (item.kind === "thought") {
-    return <div className="mb-2"><ThoughtItem item={item} /></div>;
-  }
-
   if (item.kind === "tool_call") {
-    return <div className="mb-2"><ToolCallItem item={item} /></div>;
+    return <ToolCallItem item={item} />;
   }
 
   if (item.kind === "system") {
     return (
-      <div className="flex justify-center my-4">
-        <span className="text-[11px] text-gray-500 uppercase tracking-[0.2em] font-bold px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
+      <div className="flex justify-center my-6">
+        <span className="text-[11px] text-gray-400 uppercase tracking-[0.2em] font-bold px-4 py-1.5 rounded-full bg-gray-50 border border-black/[0.03]">
           {item.text}
         </span>
       </div>
@@ -184,8 +180,8 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
 
   if (item.kind === "error") {
     return (
-      <div className="flex justify-center my-4">
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-xl text-xs font-medium">
+      <div className="flex justify-center my-6 w-full">
+        <div className="bg-red-50/50 border border-red-100 text-red-600 px-5 py-3 rounded-2xl text-[14px] font-medium max-w-md text-center shadow-sm">
           {item.text}
         </div>
       </div>

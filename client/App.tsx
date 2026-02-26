@@ -117,6 +117,66 @@ export default function App() {
     setActiveAgentIds((prev) => prev.filter((id) => id !== agent.id));
   }
 
+  async function handleRenameProject(project: Project) {
+    const alias = prompt("Enter new project name:", project.name);
+    if (alias === null) return;
+    
+    try {
+      await fetch(`/api/projects/${encodeURIComponent(project.key)}/rename`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias }),
+      });
+      setProjects((prev) => prev.map((p) => p.key === project.key ? { ...p, name: alias } : p));
+    } catch (err) {
+      alert("Failed to rename project");
+    }
+  }
+
+  async function handleRenameSession(session: Session) {
+    const alias = prompt("Enter new session name:", session.title || "");
+    if (alias === null) return;
+    
+    try {
+      await fetch(`/api/sessions/${encodeURIComponent(session.id)}/rename`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias }),
+      });
+      setSessions((prev) => prev.map((s) => s.id === session.id ? { ...s, title: alias } : s));
+    } catch (err) {
+      alert("Failed to rename session");
+    }
+  }
+
+  async function handleCreateProject() {
+    const name = prompt("Enter project name:");
+    if (!name) return;
+    
+    const customPath = prompt("Custom path (optional, leave blank for default):");
+    
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, path: customPath || undefined }),
+      });
+      const { agent } = await res.json();
+      
+      // Refresh project list
+      const projectsRes = await fetch("/api/projects");
+      const newProjects = await projectsRes.json();
+      setProjects(newProjects);
+
+      // Open the new agent
+      setAgents((prev) => [...prev, agent]);
+      setActiveAgentIds([agent.id]);
+      setViewStack(["projects", "messages", "chat"]);
+    } catch (err) {
+      alert("Failed to create project");
+    }
+  }
+
   function toggleAgentOnStage(agentId: string, split: boolean = false) {
     if (split) {
       if (activeAgentIds.includes(agentId)) return;
@@ -170,19 +230,30 @@ export default function App() {
         {/* Navigation Header */}
         <div className="pt-12 lg:pt-8 px-6 pb-2 flex flex-col items-start gap-0.5">
           {viewStack.length === 1 && (
-            <h1 className="text-[28px] lg:text-[20px] font-bold tracking-tight text-gray-900 px-1">Projects</h1>
+            <div className="flex items-center justify-between w-full pr-2">
+              <h1 className="text-[28px] lg:text-[20px] font-bold tracking-tight text-gray-900 px-1">Projects</h1>
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleCreateProject(); }}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#3478F6] hover:bg-black/[0.05] active:scale-95 transition-all"
+                title="New Project"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </button>
+            </div>
           )}
           {viewStack.length > 1 && (
             <>
               <h1 className="text-[28px] lg:text-[20px] font-bold tracking-tight text-gray-900 px-1">Messages</h1>
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 text-[#3478F6] active:opacity-50 transition-opacity ml-[-4px] mt-[-2px]"
+                className="flex items-center gap-1 text-[#3478F6] active:opacity-50 transition-opacity ml-[-12px] h-12 px-3 group"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="group-active:scale-95 transition-transform">
                   <path d="m15 18-6-6 6-6"/>
                 </svg>
-                <span className="text-[15px] lg:text-[14px] font-medium">
+                <span className="text-[17px] font-medium">
                   {viewStack[viewStack.length - 2] === 'projects' ? 'Projects' : unreadTotal || ''}
                 </span>
               </button>
@@ -213,8 +284,18 @@ export default function App() {
                           <span className="font-bold text-[15px] lg:text-[14px] truncate">{project.name}</span>
                           <span className="text-[12px] lg:text-[11px] text-gray-400 font-medium">Now</span>
                         </div>
-                        <div className="text-[13px] lg:text-[12px] text-gray-500 truncate">
-                          {project.sessionCount} active sessions
+                        <div className="flex items-center gap-2">
+                          <div className="text-[13px] lg:text-[12px] text-gray-500 truncate">
+                            {project.sessionCount} active sessions
+                          </div>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleRenameProject(project); }}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 rounded transition-opacity"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                          </button>
                         </div>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-200 mr-4 flex-shrink-0">
@@ -317,6 +398,7 @@ export default function App() {
                           <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
                             <span className="text-[12px] lg:text-[11px] text-gray-400 font-medium transition-opacity duration-200 group-hover:opacity-0">{timestampStr}</span>
                             <div className="absolute right-0 flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center justify-center h-full">
+                              <button onClick={(e) => { e.stopPropagation(); handleRenameSession(session); }} className="w-3.5 h-3.5 rounded-full bg-gray-400 flex items-center justify-center shadow-sm flex-shrink-0 group/btn hover:bg-gray-500"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                               <button onClick={(e) => { e.stopPropagation(); }} className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
                               <button onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }} className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M12 5v14M5 12h14"/></svg></button>
                             </div>
@@ -373,7 +455,7 @@ export default function App() {
                   <div className="h-20 lg:h-16 flex-shrink-0 border-b border-black/[0.05] flex items-center px-4 justify-between pt-6 lg:pt-0 bg-white/80 backdrop-blur-md sticky top-0 z-30">
                     <button
                       onClick={goBack}
-                      className="lg:hidden flex items-center gap-1 text-[#3478F6] min-w-[60px] active:opacity-50 transition-opacity"
+                      className="lg:hidden flex items-center gap-1 text-[#3478F6] min-w-[70px] h-full px-4 ml-[-16px] active:opacity-50 transition-opacity"
                     >
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <path d="m15 18-6-6 6-6"/>
