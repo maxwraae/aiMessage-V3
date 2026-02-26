@@ -23,7 +23,6 @@ function ToolCallItem({ item, isTiled }: ToolCallItemProps) {
           className="w-full flex items-center justify-between px-4 py-3 hover:bg-black/[0.02] transition-colors group/tool"
         >
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${statusColor} shadow-sm`} />
             <span className="text-[14px] font-semibold text-gray-700 uppercase tracking-wide">
               {item.name}
             </span>
@@ -128,18 +127,19 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
     return (
       <div className="flex flex-col mb-8 items-start w-full">
         {index === 0 && (
-          <div className="flex items-center justify-between w-full mb-2">
+          <div className="flex items-center gap-3 w-full mb-2">
             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Agent Response</span>
             
-            {/* Reasoning Toggle - Only shown if there's a thought in the group */}
+            {/* Reasoning Toggle - Inline and gray */}
             {group.items.some(i => i.kind === "thought") && (
               <button
                 onClick={() => setShowReasoning(!showReasoning)}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-[#3478F6] hover:underline"
+                className="flex items-center gap-1 text-[11px] font-bold text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors"
               >
+                <span className="opacity-50 text-[8px]">•</span>
                 {showReasoning ? "Hide reasoning" : "Show reasoning"}
                 <svg 
-                  width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+                  width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" 
                   className={`transition-transform duration-200 ${showReasoning ? "rotate-90" : ""}`}
                 >
                   <path d="m9 18 6-6-6-6"/>
