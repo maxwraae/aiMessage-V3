@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import ChatView from "./components/ChatView";
 import ProjectOnboardingView from "./components/ProjectOnboardingView";
 
@@ -48,14 +48,19 @@ function SessionAvatar({ session, initials }: { session: Session; initials: stri
       )}
       
       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] lg:text-[11px] font-bold transition-all duration-300 ${
-        isWarm ? 'bg-gray-100 text-gray-700' : 'bg-gray-100/50 text-gray-400'
+        isWarm ? 'bg-blue-50 text-[#007AFF] shadow-sm' : 'bg-gray-100/50 text-gray-400'
       }`}>
         {initials}
       </div>
 
+      {/* Live Indicator (Green Dot) */}
+      {isWarm && !isThinking && (
+        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#27C93F] rounded-full border-2 border-white shadow-sm" />
+      )}
+
       {/* Thinking Indicator (Amber Pulse) */}
       {isThinking && (
-        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#FFB000] rounded-full border-2 border-white animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#FFB000] rounded-full border-2 border-white animate-pulse shadow-sm" />
       )}
       
       {/* Unread Indicator (iMessage Blue Dot) */}
@@ -94,7 +99,7 @@ export default function App() {
           .then(setSessions)
           .catch(() => {});
       }
-    }, 3000);
+    }, 10000);
 
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [selectedProject]);
@@ -355,124 +360,145 @@ export default function App() {
           )}
         </div>
 
-        {/* Dynamic List Content */}
-        <div className="flex-1 overflow-y-auto px-2 pb-32">
-          {currentScene === 'projects' ? (
-            /* Scene 1: Project List */
-            <div className="space-y-0.5">
-              {projects
-                .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((project) => {
-                  const initials = project.name.substring(0, 2).toUpperCase();
-                  const count = activeAgentCount(project);
-                  return (
-                    <div
-                      key={project.key}
-                      onClick={() => openProject(project)}
-                      className="flex items-center cursor-pointer group hover:bg-black/[0.03] active:bg-black/[0.05] rounded-xl mx-1 transition-all duration-200 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5"
-                    >
-                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 ml-2 mr-3 flex-shrink-0">
-                        {initials}
-                      </div>
-                      <div className="flex-1 min-w-0 pr-4">
-                        <div className="flex justify-between items-baseline">
-                          <span className="font-bold text-[15px] lg:text-[14px] truncate">{project.name}</span>
-                          {count > 0 && <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse ml-2" />}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-[13px] lg:text-[12px] text-gray-500 truncate">
-                            {project.sessionCount} sessions
-                          </div>
-                        </div>
-                      </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-200 mr-4 flex-shrink-0">
-                        <path d="m9 18 6-6-6-6"/>
-                      </svg>
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            /* Scene 2: Unified Messages List */
-            <div className="space-y-0.5">
-              {sessions
-                .filter(s => (s.title || s.id).toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((session) => {
-                  const initials = (session.title || "?").substring(0, 2).toUpperCase();
-                  const isWarm = session.status === "running";
-                  const isSelected = activeAgentIds.includes(session.agentId || "");
-                  
-                  const date = new Date(session.modified);
-                  const today = new Date();
-                  const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-                  const timestampStr = isToday ? date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : date.toLocaleDateString([], {weekday: 'short'});
-
-                  return (
-                    <div
-                      key={session.id}
-                      onClick={() => startAgent(session.id, false, session.projectPath)}
-                      className={`flex items-center cursor-pointer group transition-all duration-300 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5 ${
-                        isSelected 
-                          ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" 
-                          : isWarm 
-                            ? "hover:bg-black/[0.03] opacity-100" 
-                            : "hover:bg-black/[0.03] opacity-60 hover:opacity-100"
-                      }`}
-                    >
-                      <SessionAvatar session={session} initials={initials} />
-                      
-                      <div className="flex-1 min-w-0 pr-4">
-                        <div className="flex justify-between items-baseline">
-                          <span className={`font-bold text-[15px] lg:text-[14px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-                            {session.title ?? session.id.slice(0, 8)}
-                          </span>
-                          <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
-                            <span className={`text-[12px] lg:text-[11px] font-medium transition-opacity duration-200 group-hover:opacity-0 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
-                              {timestampStr}
-                            </span>
-                            <div className="absolute right-0 flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center justify-center h-full">
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleRenameSession(session); }} 
-                                className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 group/btn ${isSelected ? 'bg-white/20' : 'bg-gray-400'}`}
-                              >
-                                <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
-                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                              </button>
-                              {isWarm && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); killAgent(agents.find(a => a.id === session.agentId)!); }}
-                                  className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"
-                                >
-                                  <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
-                                    <path d="M18 6 6 18M6 6l12 12"/>
-                                  </svg>
-                                </button>
-                              )}
-                              {!isSelected && activeAgentIds.length < 4 && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }}
-                                  className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"
-                                >
-                                  <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
-                                    <path d="M12 5v14M5 12h14"/>
-                                  </svg>
-                                </button>
-                              )}
+                {/* Dynamic List Content */}
+                <div className="flex-1 overflow-y-auto px-2 pb-32">
+                  {currentScene === 'projects' ? (
+                    /* Scene 1: Project List */
+                    <div className="space-y-0.5">
+                      {projects
+                        .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map((project) => {
+                          const initials = project.name.substring(0, 2).toUpperCase();
+                          const count = activeAgentCount(project);
+                          return (
+                            <div
+                              key={project.key}
+                              onClick={() => openProject(project)}
+                              className="flex items-center cursor-pointer group hover:bg-black/[0.03] active:bg-black/[0.05] rounded-xl mx-1 transition-all duration-200 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5"
+                            >
+                              <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 ml-2 mr-3 flex-shrink-0">
+                                {initials}
+                              </div>
+                              <div className="flex-1 min-w-0 pr-4">
+                                <div className="flex justify-between items-baseline">
+                                  <span className="font-bold text-[15px] lg:text-[14px] truncate">{project.name}</span>
+                                  {count > 0 && <div className="w-1.5 h-1.5 rounded-full bg-[#27C93F] animate-pulse ml-2" />}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="text-[13px] lg:text-[12px] text-gray-500 truncate">
+                                    {project.sessionCount} sessions
+                                  </div>
+                                </div>
+                              </div>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-200 mr-4 flex-shrink-0">
+                                <path d="m9 18 6-6-6-6"/>
+                              </svg>
                             </div>
-                          </div>
-                        </div>
-                        <div className={`text-[13px] lg:text-[12px] truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                          {session.agentStatus === 'thinking' ? 'Typing...' : (session.preview || "Active session")}
-                        </div>
-                      </div>
+                          );
+                        })}
                     </div>
-                  );
-                })}
-            </div>
-          )}
-        </div>
-
+                  ) : (
+                    /* Scene 2: Unified Messages List */
+                    <div className="space-y-0.5">
+                      {/* Sort logic: Running agents first, then by date */}
+                      {[...sessions]
+                        .filter(s => (s.title || s.id).toLowerCase().includes(searchQuery.toLowerCase()))
+                        .sort((a, b) => {
+                          const aRunning = agents.some(ag => ag.id === a.id) ? 1 : 0;
+                          const bRunning = agents.some(ag => ag.id === b.id) ? 1 : 0;
+                          if (aRunning !== bRunning) return bRunning - aRunning;
+                          return new Date(b.modified).getTime() - new Date(a.modified).getTime();
+                        })
+                        .map((session, idx, arr) => {
+                          const isWarm = agents.some(ag => ag.id === session.id);
+                          const showActiveHeader = isWarm && idx === 0;
+                          const showRecentHeader = !isWarm && (idx === 0 || (idx > 0 && agents.some(ag => ag.id === arr[idx-1].id)));
+        
+                          const initials = (session.title || "?").substring(0, 2).toUpperCase();
+                          const isSelected = activeAgentIds.includes(session.id);
+                          
+                          const date = new Date(session.modified);
+                          const today = new Date();
+                          const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+                          const timestampStr = isToday ? date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : date.toLocaleDateString([], {weekday: 'short'});
+        
+                          return (
+                            <div key={session.id}>
+                              {showActiveHeader && (
+                                <div className="px-4 pt-4 pb-1 text-[11px] font-bold text-[#27C93F] uppercase tracking-widest flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#27C93F] animate-pulse" />
+                                  Live Now
+                                </div>
+                              )}
+                              {showRecentHeader && (
+                                <div className="px-4 pt-4 pb-1 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                  Recent
+                                </div>
+                              )}
+                              <div
+                                onClick={() => startAgent(session.id, false, session.projectPath)}
+                                className={`flex items-center cursor-pointer group transition-all duration-300 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5 ${
+                                  isSelected 
+                                    ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" 
+                                    : isWarm 
+                                      ? "hover:bg-black/[0.03] opacity-100 bg-blue-50/30" 
+                                      : "hover:bg-black/[0.03] opacity-60 hover:opacity-100"
+                                }`}
+                              >
+                                <SessionAvatar session={{...session, status: isWarm ? 'running' : 'stopped'}} initials={initials} />
+                                
+                                <div className="flex-1 min-w-0 pr-4">
+                                  <div className="flex justify-between items-baseline">
+                                    <span className={`font-bold text-[15px] lg:text-[14px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                      {session.title ?? session.id.slice(0, 8)}
+                                    </span>
+                                    <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
+                                      <span className={`text-[12px] lg:text-[11px] font-medium transition-opacity duration-200 group-hover:opacity-0 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
+                                        {timestampStr}
+                                      </span>
+                                      <div className="absolute right-0 flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center justify-center h-full">
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); handleRenameSession(session); }} 
+                                          className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 group/btn ${isSelected ? 'bg-white/20' : 'bg-gray-400'}`}
+                                        >
+                                          <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                          </svg>
+                                        </button>
+                                        {isWarm && (
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); killAgent(agents.find(a => a.id === session.id)!); }}
+                                            className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"
+                                          >
+                                            <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
+                                              <path d="M18 6 6 18M6 6l12 12"/>
+                                            </svg>
+                                          </button>
+                                        )}
+                                        {!isSelected && activeAgentIds.length < 4 && (
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }}
+                                            className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"
+                                          >
+                                            <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
+                                              <path d="M12 5v14M5 12h14"/>
+                                            </svg>
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className={`text-[13px] lg:text-[12px] truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                                    {session.agentStatus === 'thinking' ? 'Typing...' : (session.preview || "Active session")}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
         {/* Floating Search & Compose Dock */}
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:px-10 flex items-center gap-2 z-20 pointer-events-none">
           <div className="flex-1 h-10 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] rounded-full border border-black/[0.03] flex items-center px-3 pointer-events-auto">

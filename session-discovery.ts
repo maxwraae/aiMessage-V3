@@ -170,114 +170,57 @@ export function listProjects(): Project[] {
 }
 
 export function listSessions(projectKey: string): Session[] {
-  const dir = path.join(CLAUDE_PROJECTS, projectKey);
-
-  let files: string[];
-  try {
-    files = fs.readdirSync(dir).filter((f) => f.endsWith(".jsonl"));
-  } catch {
-    return [];
-  }
+  const engineSessionsDir = path.join(os.homedir(), ".aimessage", "sessions");
+  const claudeDir = path.join(CLAUDE_PROJECTS, projectKey);
+  const requestedProjectPath = decodeProjectPath(projectKey, claudeDir);
 
   const sessions: Session[] = [];
 
-  for (const file of files) {
-    const filePath = path.join(dir, file);
-    let stat: fs.Stats;
-    try {
-      stat = fs.statSync(filePath);
-    } catch {
-      continue;
-    }
-
-    const sessionId = file.replace(/\.jsonl$/, "");
-    const cacheKey = `${projectKey}:${sessionId}`;
-    const cached = TITLE_CACHE.get(cacheKey);
-
-    if (cached && cached.mtime === stat.mtime.getTime()) {
-      const metadata = loadMetadata();
-      const displayTitle = metadata.sessionAliases[sessionId] || cached.title;
-      const projectPath = decodeProjectPath(projectKey, dir);
-      sessions.push({
-        id: sessionId,
-        projectKey,
-        projectPath,
-        title: displayTitle,
-        preview: null,
-        created: stat.birthtime,
-        modified: stat.mtime,
-      });
-      continue;
-    }
-
-    let title: string | null = null;
-    let isJunk = false;
-
-    try {
-      const content = fs.readFileSync(filePath, "utf-8");
-      const lines = content.split("\n");
-      
-      // RULE 1: Skip sidechains
-      const firstLine = lines[0];
-      if (firstLine) {
-        try {
-          const parsed = JSON.parse(firstLine) as Record<string, unknown>;
-          if (parsed.isSidechain === true) continue;
-        } catch { /* ignore */ }
-      }
-
-      // Scan for title
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const obj = JSON.parse(line) as Record<string, any>;
-          if (obj.type === "user" && obj.message) {
-            const content = obj.message.content;
-            let text = "";
-            if (typeof content === "string") {
-              text = content;
-            } else if (Array.isArray(content)) {
-              text = content.map((b: any) => b.text ?? "").join("").trim();
-            }
-
-            // Centralized Noise Filter
-            if (isNoise(text)) {
-              continue;
-            }
-
-            if (text) {
-              title = text.slice(0, 60) + (text.length > 60 ? "…" : "");
-              break;
-            }
+  // 1. Scan Engine Sessions
+  try {
+    if (fs.existsSync(engineSessionsDir)) {
+      const ids = fs.readdirSync(engineSessionsDir);
+      for (const id of ids) {
+        const metaPath = path.join(engineSessionsDir, id, "metadata.json");
+        if (fs.existsSync(metaPath)) {
+          const meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+          if (path.resolve(meta.projectPath) === path.resolve(requestedProjectPath)) {
+            sessions.push({
+              id,
+              projectKey,
+              projectPath: meta.projectPath,
+              title: meta.title || "New Chat",
+              preview: "Active session",
+              created: new Date(), // Shallow
+              modified: new Date(meta.lastSeen || Date.now()),
+            });
           }
-        } catch { /* ignore */ }
+        }
       }
+    }
+  } catch { /* ignore */ }
 
-      if (!title) {
-        isJunk = true;
+  // 2. Scan Claude Vault (Shallow)
+  try {
+    if (fs.existsSync(claudeDir)) {
+      const files = fs.readdirSync(claudeDir).filter(f => f.endsWith(".jsonl"));
+      for (const file of files) {
+        const id = file.replace(".jsonl", "");
+        if (sessions.some(s => s.id === id)) continue; // Already have it from Engine
+
+        const stat = fs.statSync(path.join(claudeDir, file));
+        sessions.push({
+          id,
+          projectKey,
+          projectPath: requestedProjectPath,
+          title: "Terminal Chat",
+          preview: "From Claude Vault",
+          created: stat.birthtime,
+          modified: stat.mtime,
+        });
       }
-
-    } catch {
-      isJunk = true;
     }
-
-    if (!isJunk && title) {
-      TITLE_CACHE.set(cacheKey, { title, mtime: stat.mtime.getTime() });
-      const metadata = loadMetadata();
-      const displayTitle = metadata.sessionAliases[sessionId] || title;
-      const projectPath = decodeProjectPath(projectKey, dir);
-
-      sessions.push({
-        id: sessionId,
-        projectKey,
-        projectPath,
-        title: displayTitle,
-        preview: null,
-        created: stat.birthtime,
-        modified: stat.mtime,
-      });
-    }
-  }
+  } catch { /* ignore */ }
 
   sessions.sort((a, b) => b.modified.getTime() - a.modified.getTime());
   return sessions;

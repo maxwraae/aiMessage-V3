@@ -258,6 +258,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
       addLog("CONNECTED"); 
     };
     ws.onmessage = (e) => {
+      addLog(`RECV: ${e.data.substring(0, 50)}...`);
       try {
         const msg = JSON.parse(e.data) as ChatWsServerMessage;
         if (msg.type === "history_snapshot") {
@@ -356,10 +357,21 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
 
   return (
     <div className="flex flex-col h-full bg-white relative overflow-hidden">
+      {/* Internal Log Overlay (Diagnostic Eyes) */}
+      <div className="absolute top-20 right-4 w-64 max-h-48 overflow-y-auto bg-black/80 backdrop-blur text-[10px] text-green-400 p-2 rounded-lg z-50 pointer-events-none font-mono shadow-2xl border border-white/10">
+        <div className="text-white border-b border-white/20 pb-1 mb-1 font-bold">SYSTEM LOG ({status})</div>
+        {logs.map((log, i) => (
+          <div key={i} className="mb-0.5 opacity-80 leading-tight">
+            {log}
+          </div>
+        ))}
+        {items.length === 0 && <div className="text-amber-400 italic">No messages in buffer</div>}
+        {items.length > 0 && <div className="text-blue-400">{items.length} frames received</div>}
+      </div>
+
       {/* Mini Debug Header */}
       <div className="px-4 py-1 bg-gray-50 text-[10px] text-gray-400 border-b flex justify-between items-center">
         <span>{status} | {agentId}</span>
-        <span>{logs[logs.length-1]}</span>
       </div>
 
       {/* Messages */}

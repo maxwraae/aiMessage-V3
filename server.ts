@@ -5,6 +5,7 @@ import { join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as os from "node:os";
 import { execSync } from "node:child_process";
+import * as crypto from "node:crypto";
 import { WebSocketServer } from "ws";
 
 // Real-time file logging
@@ -33,16 +34,9 @@ console.warn = (...args) => {
 };
 
 import { listProjects, listSessions, renameProject, renameSession, createProjectFolder } from "./session-discovery.js";
-import {
-  spawnChatAgent,
-  listChatAgents,
-  killChatAgent,
-  subscribeChatAgent,
-  unsubscribeChatAgent,
-  sendMessage,
-  getChatAgent,
-  findAgentBySessionId,
-} from "./chat-agent.js";
+import { TmuxSessionEngine } from "./src/engine-v2/TmuxSessionEngine.js";
+let engine = new TmuxSessionEngine();
+
 import type { ChatWsClientMessage } from "./shared/stream-types.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -58,7 +52,7 @@ const MIME: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
-const server = createServer((req, res) => {
+const server = createServer(async (req, res) => {
   console.log(`[Request] ${req.method} ${req.url}`);
 
   if (req.url === "/api/transcribe" && req.method === "POST") {
@@ -145,16 +139,25 @@ const server = createServer((req, res) => {
   if (req.url === "/api/projects" && req.method === "POST") {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
-    req.on("end", () => {
+    req.on("end", async () => {
       try {
         const { name, path: customPath, model } = JSON.parse(body);
         if (!name) throw new Error("Project name is required");
         
         const projectPath = createProjectFolder(name, customPath);
-        const agent = spawnChatAgent(projectPath, undefined, model);
+        const sessionId = crypto.randomUUID();
+        await engine.create(sessionId, projectPath, model || "sonnet");
         
         res.writeHead(201, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ projectPath, agent }));
+        res.end(JSON.stringify({ 
+          projectPath, 
+          agent: {
+            id: sessionId,
+            type: "chat",
+            title: name,
+            status: "running"
+          } 
+        }));
       } catch (err) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: String(err) }));
@@ -203,17 +206,17 @@ const server = createServer((req, res) => {
     const key = req.url.match(/^\/api\/projects\/([^/]+)\/sessions$/)![1];
     const sessions = listSessions(decodeURIComponent(key));
     
-    // Augment sessions with agent status (Power State)
-    const augmentedSessions = sessions.map(session => {
-      const agent = findAgentBySessionId(session.id);
+    // Augment sessions with real engine status
+    const augmentedSessions = await Promise.all(sessions.map(async (session) => {
+      const state = await engine.getState(session.id);
       return {
         ...session,
-        agentId: agent?.id,
-        agentStatus: agent?.agentStatus,
-        status: agent?.status || "stopped",
-        unreadCount: agent?.unreadCount || 0
+        agentId: session.id,
+        agentStatus: state?.status === 'busy' ? 'thinking' : 'idle',
+        status: state?.status === 'sleeping' ? 'stopped' : 'running',
+        unreadCount: 0 // Will be handled by journal later
       };
-    });
+    }));
 
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(augmentedSessions));
@@ -221,24 +224,54 @@ const server = createServer((req, res) => {
   }
 
   if (req.url === "/api/agents" && req.method === "GET") {
+    // List sessions that have active processes
+    const activeIds = engine.listActiveSessions();
+    const activeAgents = await Promise.all(activeIds.map(async (id) => {
+      const state = await engine.getState(id);
+      return {
+        id,
+        type: "chat",
+        title: "Chat", // We'll improve naming later
+        projectPath: state?.projectPath || "",
+        model: state?.model,
+        status: "running",
+        agentStatus: state?.status === 'busy' ? 'thinking' : 'idle'
+      };
+    }));
+
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(listChatAgents()));
+    res.end(JSON.stringify(activeAgents));
     return;
   }
 
   if (req.url === "/api/agents" && req.method === "POST") {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
-    req.on("end", () => {
+    req.on("end", async () => {
       try {
         const payload = JSON.parse(body) as {
           projectPath: string;
           resumeSessionId?: string;
           model?: string;
         };
-        const agent = spawnChatAgent(payload.projectPath, payload.resumeSessionId, payload.model);
+        
+        const sessionId = payload.resumeSessionId || crypto.randomUUID();
+        await engine.create(sessionId, payload.projectPath, payload.model || "sonnet");
+        
+        // Wake it up immediately with an empty nudge or just ensure it's ready
+        // We'll return the agent object the UI expects
         res.writeHead(201, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(agent));
+        res.end(JSON.stringify({
+          id: sessionId,
+          type: "chat",
+          title: "Chat",
+          projectPath: payload.projectPath,
+          model: payload.model || "sonnet",
+          status: "running",
+          agentStatus: "idle",
+          unreadCount: 0,
+          startedAt: new Date().toISOString()
+        }));
       } catch (err) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: String(err) }));
@@ -249,9 +282,37 @@ const server = createServer((req, res) => {
 
   if (req.url?.match(/^\/api\/agents\/([^/]+)$/) && req.method === "DELETE") {
     const id = req.url.match(/^\/api\/agents\/([^/]+)$/)![1];
-    killChatAgent(id);
+    engine.interrupt(id);
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  if (req.url === "/api/test/restart-engine" && req.method === "POST") {
+    try {
+      console.log('[Test] Restarting engine...');
+      engine.stop();
+      engine = new TmuxSessionEngine();
+      await engine.reconcile();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: String(err) }));
+    }
+    return;
+  }
+
+  if (req.url?.match(/^\/api\/test\/destroy-session\/([^/]+)$/) && req.method === "POST") {
+    const id = req.url.match(/^\/api\/test\/destroy-session\/([^/]+)$/)![1];
+    try {
+      await engine.destroy(id, true);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: String(err) }));
+    }
     return;
   }
 
@@ -300,14 +361,17 @@ agents.then(list=>{
 
   try {
     const content = readFileSync(filePath);
+    console.log(`[Serve] 200: ${filePath} (${MIME[extname(filePath)] ?? "application/octet-stream"})`);
     res.writeHead(200, { "Content-Type": MIME[extname(filePath)] ?? "application/octet-stream" });
     res.end(content);
   } catch {
     try {
       const content = readFileSync(join(DIST, "index.html"));
+      console.log(`[Serve] 200 (SPA Fallback): index.html for ${req.url}`);
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(content);
     } catch {
+      console.error(`[Serve] 404: ${filePath}`);
       res.writeHead(404);
       res.end("Not found — run npm run build first");
     }
@@ -327,32 +391,52 @@ server.on("upgrade", (req: IncomingMessage, socket, head) => {
 wss.on("connection", (ws, req: IncomingMessage) => {
   const urlPath = req.url ?? "";
 
-  // Chat WebSocket: /ws/chat/{agentId}
+  // Chat WebSocket: /ws/chat/{sessionId}
   if (urlPath.startsWith("/ws/chat/")) {
-    const agentId = urlPath.slice(9);
-    subscribeChatAgent(agentId, ws);
+    const sessionId = urlPath.slice(9);
+    
+    // 1. Start Observation (Tailing the Movie)
+    engine.observe(sessionId, 0).then(stream => {
+      const reader = stream.getReader();
+      
+      const pump = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done || ws.readyState !== 1) break;
+          ws.send(value);
+        }
+      };
+      
+      pump().catch(() => {});
+    });
 
+    // 2. Handle User Input (Queuing)
     ws.on("message", (raw) => {
       try {
         const msg = JSON.parse(raw.toString()) as ChatWsClientMessage;
         if (msg.type === "user_input") {
-          console.log(`[WS] Received user_input for agent ${agentId}: "${msg.text}"`);
-          sendMessage(agentId, msg.text);
+          console.log(`[WS] Queuing user_input for session ${sessionId}: "${msg.text}"`);
+          engine.submit(sessionId, "ws-client", msg.text);
         }
       } catch {
-        // ignore malformed messages
+        // ignore malformed
       }
     });
 
     ws.on("close", () => {
-      unsubscribeChatAgent(agentId, ws);
+      // Stream will close naturally via reader loop check
     });
     return;
   }
 });
 
 server.listen(7777, "0.0.0.0", () => {
-  console.log("aiMessage V3 (Headless) listening on http://0.0.0.0:7777");
+  console.log("aiMessage V4 (tmux engine) listening on http://0.0.0.0:7777");
+
+  // Reconnect to any tmux sessions that survived the previous server instance
+  engine.reconcile().catch(err => {
+    console.error("[Boot] Reconciliation failed:", err);
+  });
 
   // Automatically ensure Tailscale HTTPS tunnel is active
   try {
@@ -368,4 +452,17 @@ server.listen(7777, "0.0.0.0", () => {
   } catch (err) {
     console.log("[Tailscale] Tunnel auto-start skipped (might need manual login or already running)");
   }
+});
+
+// Graceful shutdown — close FIFOs but keep tmux sessions alive
+process.on('SIGINT', () => {
+  console.log('[Server] SIGINT received, shutting down...');
+  engine.stop();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('[Server] SIGTERM received, shutting down...');
+  engine.stop();
+  process.exit(0);
 });
