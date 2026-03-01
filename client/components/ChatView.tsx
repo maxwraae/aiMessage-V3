@@ -3,37 +3,57 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { StreamItem, ChatWsServerMessage, ChatWsClientMessage } from "../types/stream";
 
+type ContextClearMarker = { kind: "context_clear"; id: string; timestamp: string };
+type PlanModeMarker = { kind: "plan_mode"; id: string; timestamp: string };
+type DisplayItem = StreamItem | ContextClearMarker | PlanModeMarker;
+
 type AgentStatus = "idle" | "thinking" | "done" | "error" | "connecting" | "nudge";
 
-type MessageGroup = {
-  kind: "user" | "agent" | "system" | "tool" | "thought" | "error";
-  items: StreamItem[];
-  timestamp: string;
-};
+type MessageGroup =
+  | {
+      kind: "user" | "agent" | "system" | "tool" | "thought" | "error" | "notification";
+      items: StreamItem[];
+      timestamp: string;
+    }
+  | { kind: "context_clear"; id: string; timestamp: string }
+  | { kind: "plan_mode"; id: string; timestamp: string };
 
-function groupMessages(items: StreamItem[]): MessageGroup[] {
+function groupMessages(items: DisplayItem[]): MessageGroup[] {
   const groups: MessageGroup[] = [];
-  let currentGroup: MessageGroup | null = null;
+  let currentGroup: Extract<MessageGroup, { items: StreamItem[] }> | null = null;
 
   items.filter(item => item.kind !== "thought").forEach((item) => {
-    let kind: MessageGroup["kind"] = "agent";
+    if (item.kind === "context_clear") {
+      currentGroup = null;
+      groups.push({ kind: "context_clear", id: item.id, timestamp: item.timestamp });
+      return;
+    }
+
+    if (item.kind === "plan_mode") {
+      currentGroup = null;
+      groups.push({ kind: "plan_mode", id: item.id, timestamp: item.timestamp });
+      return;
+    }
+
+    let kind: Extract<MessageGroup, { items: StreamItem[] }>["kind"] = "agent";
     if (item.kind === "user_message") kind = "user";
     else if (item.kind === "system") kind = "system";
     else if (item.kind === "tool_call") kind = "tool";
     else if (item.kind === "error") kind = "error";
+    else if (item.kind === "notification") kind = "notification";
 
     if (item.kind === "assistant_message" || item.kind === "text_delta" || item.kind === "thought") kind = "agent";
 
-    const canGroup = currentGroup && 
-      currentGroup.kind === kind && 
+    const canGroup = currentGroup &&
+      currentGroup.kind === kind &&
       (kind === "user" || kind === "agent");
 
     if (canGroup) {
-      currentGroup!.items.push(item);
+      currentGroup!.items.push(item as StreamItem);
     } else {
       currentGroup = {
         kind,
-        items: [item],
+        items: [item as StreamItem],
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       groups.push(currentGroup);
@@ -90,7 +110,7 @@ function ToolCallItem({ item }: { item: Extract<StreamItem, { kind: "tool_call" 
   );
 }
 
-function MessageBubble({ item, group, index, total }: { item: StreamItem; group: MessageGroup; index: number; total: number }) {
+function MessageBubble({ item, group, index, total }: { item: StreamItem; group: Extract<MessageGroup, { items: StreamItem[] }>; index: number; total: number }) {
   if (item.kind === "tool_call") {
     return <ToolCallItem item={item} />;
   }
@@ -144,18 +164,19 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
   return null;
 }
 
-type Props = { 
+type Props = {
   agentId: string;
   onTitleUpdate?: (title: string) => void;
   onUnreadReset?: () => void;
+  onStatusChange?: (sessionId: string, status: string) => void;
   onModelSwitch?: (model: string) => void;
   currentModel?: string;
   isTiled?: boolean;
 };
 
-export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onModelSwitch, currentModel, isTiled }: Props) {
+export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStatusChange, onModelSwitch, currentModel, isTiled }: Props) {
   console.log(`[ChatView] Mounting for agent ${agentId}`);
-  const [items, setItems] = useState<StreamItem[]>([]);
+  const [items, setItems] = useState<DisplayItem[]>([]);
   const [status, setStatus] = useState<AgentStatus>("connecting");
   const [input, setInput] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
@@ -165,6 +186,10 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const isAtBottom = useRef(true);
+
+  // Text buffering for phrase-cluster streaming
+  const textBufferRef = useRef<string>("");
+  const flushTimerRef = useRef<number | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -239,11 +264,11 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
   }, [items]);
 
   const connectedAgentIdRef = useRef<string | null>(null);
-  const callbacksRef = useRef({ onTitleUpdate, onUnreadReset });
+  const callbacksRef = useRef({ onTitleUpdate, onUnreadReset, onStatusChange });
 
   useEffect(() => {
-    callbacksRef.current = { onTitleUpdate, onUnreadReset };
-  }, [onTitleUpdate, onUnreadReset]);
+    callbacksRef.current = { onTitleUpdate, onUnreadReset, onStatusChange };
+  }, [onTitleUpdate, onUnreadReset, onStatusChange]);
 
   useEffect(() => {
     if (connectedAgentIdRef.current === agentId) return;
@@ -253,9 +278,36 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
     const ws = new WebSocket(`${protocol}//${location.host}/ws/chat/${agentId}`);
     wsRef.current = ws;
 
-    ws.onopen = () => { 
-      setStatus("idle"); 
-      addLog("CONNECTED"); 
+    // Flush buffered text to items state as one chunk
+    const flushBuffer = () => {
+      const buffered = textBufferRef.current;
+      if (!buffered) return;
+      console.log(`[TextBuffer] FLUSH: "${buffered.substring(0, 50)}..." (${buffered.length} chars)`);
+      textBufferRef.current = "";
+      if (flushTimerRef.current !== null) {
+        clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+      setItems((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.kind === "assistant_message" && last.id === "streaming") {
+          const next = [...prev];
+          next[next.length - 1] = { ...last, text: (last.text || "") + buffered };
+          return next;
+        } else {
+          return [...prev, {
+            kind: "assistant_message" as const,
+            text: buffered,
+            id: "streaming",
+            timestamp: new Date().toISOString()
+          }];
+        }
+      });
+    };
+
+    ws.onopen = () => {
+      setStatus("idle");
+      addLog("CONNECTED");
     };
     ws.onmessage = (e) => {
       addLog(`RECV: ${e.data.substring(0, 50)}...`);
@@ -265,29 +317,36 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
           console.log(`[WS] Received history_snapshot with ${msg.items.length} items`);
           setItems(msg.items);
         } else if (msg.type === "stream_item") {
-          setItems((prev) => {
-            const item = msg.item;
+          const item = msg.item;
 
-            // Handle streaming text deltas
-            if (item.kind === "text_delta") {
-              const last = prev[prev.length - 1];
-              if (last && last.kind === "assistant_message" && last.id === "streaming") {
-                const next = [...prev];
-                next[next.length - 1] = {
-                  ...last,
-                  text: (last.text || "") + item.text
-                };
-                return next;
-              } else {
-                return [...prev, {
-                  kind: "assistant_message",
-                  text: item.text,
-                  id: "streaming",
-                  timestamp: item.timestamp
-                }];
+          // Buffer text deltas — release in phrase clusters
+          if (item.kind === "text_delta") {
+            textBufferRef.current += item.text;
+            if (textBufferRef.current.length > 30) {
+              // Buffer is big enough — flush immediately
+              flushBuffer();
+            } else {
+              // Schedule a flush in 150ms if not already scheduled
+              if (flushTimerRef.current === null) {
+                flushTimerRef.current = window.setTimeout(() => {
+                  flushTimerRef.current = null;
+                  flushBuffer();
+                }, 150);
               }
             }
+            return;
+          }
 
+          // When assistant_message arrives, discard buffer first (it has the complete text)
+          if (item.kind === "assistant_message") {
+            if (flushTimerRef.current !== null) {
+              clearTimeout(flushTimerRef.current);
+              flushTimerRef.current = null;
+            }
+            textBufferRef.current = "";
+          }
+
+          setItems((prev) => {
             // Convert streaming block to final message when assistant_message arrives
             if (item.kind === "assistant_message") {
               const filtered = prev.filter(i => i.id !== "streaming");
@@ -306,17 +365,43 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
             return [...prev, item];
           });
         } else if (msg.type === "agent_status") {
-          setStatus(msg.status as AgentStatus);
+          const newStatus = msg.status as AgentStatus;
+          console.log(`[StatusChange] ${agentId} → ${newStatus}`);
+          setStatus(newStatus);
+          callbacksRef.current.onStatusChange?.(agentId, newStatus);
+          // On idle, flush any remaining buffered text
+          if (newStatus === "idle" || newStatus === "done") {
+            flushBuffer();
+          }
         } else if (msg.type === "chat_title_update") {
           callbacksRef.current.onTitleUpdate?.(msg.title);
         } else if (msg.type === "unread_cleared") {
           callbacksRef.current.onUnreadReset?.();
+        } else if (msg.type === "context_cleared") {
+          setItems((prev) => [
+            ...prev,
+            {
+              kind: "context_clear" as const,
+              id: `ctx-clear-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          setStatus("idle");
+        } else if (msg.type === "plan_mode_entered") {
+          setItems((prev) => [
+            ...prev,
+            {
+              kind: "plan_mode" as const,
+              id: `plan-mode-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+            },
+          ]);
         }
       } catch { /* ignore */ }
     };
-    ws.onclose = () => { 
-      setStatus("error"); 
-      addLog("CLOSED"); 
+    ws.onclose = () => {
+      setStatus("error");
+      addLog("CLOSED");
       if (connectedAgentIdRef.current === agentId) {
         connectedAgentIdRef.current = null;
       }
@@ -328,7 +413,15 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
         connectedAgentIdRef.current = null;
       }
       if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
+      if (flushTimerRef.current !== null) {
+        clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
     };
+  }, [agentId]);
+
+  const stopGeneration = useCallback(async () => {
+    await fetch(`/api/agents/${agentId}`, { method: "DELETE" }).catch(() => {});
   }, [agentId]);
 
   const send = (e?: React.FormEvent) => {
@@ -369,10 +462,6 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
         {items.length > 0 && <div className="text-blue-400">{items.length} frames received</div>}
       </div>
 
-      {/* Mini Debug Header */}
-      <div className="px-4 py-1 bg-gray-50 text-[10px] text-gray-400 border-b flex justify-between items-center">
-        <span>{status} | {agentId}</span>
-      </div>
 
       {/* Messages */}
       <div 
@@ -380,28 +469,52 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-10 py-6 space-y-4 touch-pan-y overscroll-contain"
       >
-        {messageGroups.map((group, gIdx) => (
-          <div key={gIdx} className="space-y-1">
-            {group.items.map((item, iIdx) => (
-              <MessageBubble key={iIdx} item={item} group={group} index={iIdx} total={group.items.length} />
-            ))}
-          </div>
-        ))}
-        {status === "thinking" && (
-          <div className="flex gap-1 ml-2 py-2">
-            <span className="w-1 h-1 rounded-full bg-gray-300 animate-bounce" />
-            <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" />
-            <span className="w-1 h-1 rounded-full bg-gray-300 animate-bounce" />
-          </div>
-        )}
+        {messageGroups.map((group, gIdx) => {
+          if (group.kind === "context_clear") {
+            return (
+              <div key={group.id} className="flex items-center gap-3 py-4 px-2">
+                <div className="h-px flex-1 bg-black/10" />
+                <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap tracking-wide">Context cleared</span>
+                <div className="h-px flex-1 bg-black/10" />
+              </div>
+            );
+          }
+          if (group.kind === "plan_mode") {
+            return (
+              <div key={group.id} className="flex items-center gap-3 py-4 px-2">
+                <div className="h-px flex-1 bg-amber-300/40" />
+                <span className="text-[11px] text-amber-600/70 font-medium whitespace-nowrap tracking-wide">Plan mode</span>
+                <div className="h-px flex-1 bg-amber-300/40" />
+              </div>
+            );
+          }
+          if (group.kind === "notification") {
+            const notifItem = group.items[0] as Extract<StreamItem, { kind: "notification" }>;
+            return (
+              <div key={gIdx} className="flex items-center justify-center gap-3 py-3 px-8">
+                <div className="h-px flex-1 bg-[#007AFF]/20" />
+                <span className="text-[12px] text-[#007AFF] font-medium whitespace-nowrap">{notifItem.subject}</span>
+                <div className="h-px flex-1 bg-[#007AFF]/20" />
+              </div>
+            );
+          }
+          return (
+            <div key={gIdx} className="space-y-1">
+              {group.items.map((item, iIdx) => (
+                <MessageBubble key={iIdx} item={item} group={group as Extract<MessageGroup, { items: StreamItem[] }>} index={iIdx} total={group.items.length} />
+              ))}
+            </div>
+          );
+        })}
         <div ref={bottomRef} />
       </div>
 
       {/* Input Form - Directly in the flow */}
-      <form 
+      <form
         onSubmit={send}
-        className="px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] flex items-end gap-2 bg-white border-t border-black/[0.03]"
+        className="bg-white border-t border-black/[0.03]"
       >
+        <div className="max-w-3xl mx-auto px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] flex items-end gap-2">
         <div className="flex-1 relative flex items-end">
           <textarea 
             ref={textareaRef}
@@ -410,7 +523,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={isTranscribing ? "Transcribing..." : "iMessage"} 
-            className="flex-1 min-h-[40px] max-h-[150px] bg-white border border-gray-200 rounded-[20px] pl-4 pr-10 py-2 text-[17px] outline-none resize-none focus:border-[#007AFF] transition-colors"
+            className="flex-1 min-h-[40px] max-h-[150px] bg-white border border-gray-200 rounded-[20px] pl-4 pr-10 py-2 text-[17px] outline-none resize-none focus:border-[#007AFF] transition-colors [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           />
           {!input.trim() && (
             <button
@@ -429,14 +542,26 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onMode
           )}
         </div>
         
-        {input.trim() && (
+        {status === "thinking" ? (
+          <button
+            type="button"
+            onClick={stopGeneration}
+            title="Stop generating"
+            className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition-all hover:bg-red-600 shadow-sm shadow-red-500/30"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <rect x="0" y="0" width="12" height="12" rx="2"/>
+            </svg>
+          </button>
+        ) : input.trim() ? (
           <button
             type="submit"
             className="w-10 h-10 rounded-full bg-[#007AFF] text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
           </button>
-        )}
+        ) : null}
+        </div>
       </form>
     </div>
   );

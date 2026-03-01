@@ -33,40 +33,35 @@ type Session = {
   agentId?: string;
   agentStatus?: "idle" | "thinking" | "done" | "error" | "nudge";
   unreadCount: number;
+  hasUnread?: boolean;
+  latestNotification?: string | null;
 };
 
-function SessionAvatar({ session, initials }: { session: Session; initials: string }) {
-  const isThinking = session.agentStatus === "thinking";
-  const isNudge = session.agentStatus === "nudge";
+function SessionAvatar({ session, initials, liveStatus }: { session: Session; initials: string; liveStatus?: string }) {
+  const isThinking = (liveStatus || session.agentStatus) === "thinking";
   const isWarm = session.status === "running";
+  const hasNotification = !!session.latestNotification;
+  const hasUnread = session.hasUnread;
 
   return (
     <div className="relative flex-shrink-0 mr-3">
-      {/* Blue Ring for Nudge */}
-      {isNudge && (
+      {/* Notification Ring */}
+      {hasNotification && (
         <div className="absolute -inset-1 rounded-full border-2 border-[#007AFF] animate-pulse" />
       )}
-      
-      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] lg:text-[11px] font-bold transition-all duration-300 ${
-        isWarm ? 'bg-blue-50 text-[#007AFF] shadow-sm' : 'bg-gray-100/50 text-gray-400'
+
+      {/* The Avatar */}
+      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] lg:text-[11px] font-bold transition-all duration-500 ${
+        hasUnread
+          ? 'bg-[#007AFF] text-white shadow-sm shadow-[#007AFF]/30'
+          : isThinking
+            ? `bg-blue-50 text-[#007AFF] shadow-sm breathing-glow-ring`
+            : isWarm
+              ? 'bg-blue-50 text-[#007AFF] shadow-sm'
+              : 'bg-gray-100/50 text-gray-400'
       }`}>
         {initials}
       </div>
-
-      {/* Live Indicator (Green Dot) */}
-      {isWarm && !isThinking && (
-        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#27C93F] rounded-full border-2 border-white shadow-sm" />
-      )}
-
-      {/* Thinking Indicator (Amber Pulse) */}
-      {isThinking && (
-        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#FFB000] rounded-full border-2 border-white animate-pulse shadow-sm" />
-      )}
-      
-      {/* Unread Indicator (iMessage Blue Dot) */}
-      {session.unreadCount > 0 && !isNudge && (
-        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#007AFF] rounded-full shadow-sm" />
-      )}
     </div>
   );
 }
@@ -82,6 +77,7 @@ export default function App() {
   const [spawning, setSpawning] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewStack, setViewStack] = useState<string[]>(["projects"]); // 'projects' | 'messages' | 'chat'
+  const [agentStatuses, setAgentStatuses] = useState<Record<string, string>>({});
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -134,10 +130,8 @@ export default function App() {
   const startAgent = useCallback(async (resumeSessionId?: string, split: boolean = false, explicitPath?: string, model?: string) => {
     let targetProject = selectedProject;
     
-    // Use explicit path from session if provided, otherwise fallback to selected or defaults
-    const projectPath = explicitPath || targetProject?.path || projects.find(p => p.name.toLowerCase() === "maxwraae")?.path || projects[0]?.path;
-    
-    if (!projectPath) return;
+    const projectPath = explicitPath || targetProject?.path || "~";
+
 
     setSpawning(true);
     try {
@@ -188,6 +182,10 @@ export default function App() {
     setActiveAgentIds((prev) => prev.filter((id) => id !== agent.id));
   }, []);
 
+  const stopAgent = useCallback(async (agentId: string) => {
+    await fetch(`/api/agents/${agentId}`, { method: "DELETE" }).catch(() => {});
+  }, []);
+
   const switchAgentModel = useCallback(async (agentId: string, model: string) => {
     const agent = agents.find(a => a.id === agentId);
     if (!agent) return;
@@ -202,7 +200,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectPath: agent.projectPath,
-          resumeSessionId: agent.sessionId,
+          resumeSessionId: agent.id,
           model,
         }),
       });
@@ -252,15 +250,15 @@ export default function App() {
     setViewStack(["projects", "messages", "chat"]);
   };
 
-  const completeOnboarding = async (name: string, customPath?: string, model?: string) => {
+  const completeOnboarding = async (dirPath: string) => {
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, path: customPath, model }),
+        body: JSON.stringify({ path: dirPath }),
       });
       const { agent } = await res.json();
-      
+
       const projectsRes = await fetch("/api/projects");
       const newProjects = await projectsRes.json();
       setProjects(newProjects);
@@ -303,6 +301,11 @@ export default function App() {
 
   const handleUnreadReset = useCallback((agentId: string) => {
     setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, unreadCount: 0 } : a));
+  }, []);
+
+  const handleStatusChange = useCallback((sessionId: string, status: string) => {
+    console.log(`[Glow] ${sessionId} → ${status} (breathing=${status === "thinking"})`);
+    setAgentStatuses((prev) => ({ ...prev, [sessionId]: status }));
   }, []);
 
   const activeAgentCount = (p: Project) =>
@@ -445,11 +448,18 @@ export default function App() {
                                       : "hover:bg-black/[0.03] opacity-60 hover:opacity-100"
                                 }`}
                               >
-                                <SessionAvatar session={{...session, status: isWarm ? 'running' : 'stopped'}} initials={initials} />
+                                <SessionAvatar session={{...session, status: isWarm ? 'running' : 'stopped'}} initials={initials} liveStatus={agentStatuses[session.id]} />
                                 
                                 <div className="flex-1 min-w-0 pr-4">
                                   <div className="flex justify-between items-baseline">
-                                    <span className={`font-bold text-[15px] lg:text-[14px] truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                    <span className={`text-[15px] lg:text-[14px] truncate flex items-center gap-1.5 ${
+                                      isSelected ? 'text-white font-bold'
+                                      : session.hasUnread ? 'text-gray-900 font-bold'
+                                      : 'text-gray-900 font-normal'
+                                    }`}>
+                                      {session.hasUnread && !isSelected && (
+                                        <span className="inline-block w-2 h-2 rounded-full bg-[#007AFF] flex-shrink-0" />
+                                      )}
                                       {session.title ?? session.id.slice(0, 8)}
                                     </span>
                                     <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
@@ -489,7 +499,11 @@ export default function App() {
                                     </div>
                                   </div>
                                   <div className={`text-[13px] lg:text-[12px] truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                                    {session.agentStatus === 'thinking' ? 'Typing...' : (session.preview || "Active session")}
+                                    {session.agentStatus === 'thinking'
+                                      ? 'Typing...'
+                                      : session.latestNotification
+                                        ? session.latestNotification
+                                        : (session.preview || "Active session")}
                                   </div>
                                 </div>
                               </div>
@@ -545,8 +559,9 @@ export default function App() {
               const agent = agents.find(a => a.id === id);
               const isHiddenOnMobile = index !== activeAgentIds.length - 1;
               return (
-                <div key={id} className={`bg-white flex flex-col min-h-0 overflow-hidden relative ${isHiddenOnMobile ? "hidden lg:flex" : "flex"}`}>
-                  <div className="h-20 lg:h-16 flex-shrink-0 border-b border-black/[0.05] flex items-center px-4 justify-between pt-6 lg:pt-0 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+                <div key={id} className={`bg-white flex flex-col min-h-0 overflow-hidden relative group ${isHiddenOnMobile ? "hidden lg:flex" : "flex"}`}>
+                  <div className={`h-20 lg:h-14 flex-shrink-0 border-b border-black/[0.05] flex items-center px-4 justify-between pt-6 lg:pt-0 bg-white/80 backdrop-blur-md sticky top-0 z-30 ${agentStatuses[id] === "thinking" ? "breathing-glow" : "breathing-glow-fade"}`}>
+                    {/* Mobile back button */}
                     <button
                       onClick={goBack}
                       className="lg:hidden flex items-center gap-1 text-[#3478F6] min-w-[70px] h-full px-4 ml-[-16px] active:opacity-50 transition-opacity"
@@ -554,54 +569,61 @@ export default function App() {
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <path d="m15 18-6-6 6-6"/>
                       </svg>
-                      <span className="text-[17px] font-medium">{unreadTotal || ''}</span>
                     </button>
-                    <div className="flex flex-col items-center flex-1 lg:items-start lg:ml-2 min-w-0 px-2">
-                      <div className="flex items-center gap-2 max-w-full">
-                        {/* Project Initials (Mobile Only) */}
-                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 lg:hidden flex-shrink-0">
-                          {(agent?.title || "?").substring(0, 2).toUpperCase()}
-                        </div>
-                        
-                        {/* Model Avatar Bubble */}
-                        <button 
-                          onClick={() => {
-                            const models = ['sonnet', 'haiku', 'opus'];
-                            const current = agent?.model || 'sonnet';
-                            const next = models[(models.indexOf(current) + 1) % models.length];
-                            switchAgentModel(id, next);
-                          }}
-                          className="w-6 h-6 rounded-full bg-[#3478F6]/10 flex items-center justify-center text-[10px] font-black uppercase text-[#3478F6] hover:bg-[#3478F6]/20 transition-all cursor-pointer shadow-sm border border-[#3478F6]/10 flex-shrink-0"
-                          title={`Switch Model (Current: ${agent?.model || 'sonnet'})`}
-                        >
-                          {(() => {
-                            const m = (agent?.model || 'sonnet').toLowerCase();
-                            if (m.includes('haiku')) return 'H';
-                            if (m.includes('opus')) return 'O';
-                            if (m.includes('sonnet')) return 'S';
-                            return m.charAt(0).toUpperCase();
-                          })()}
-                        </button>
 
-                        <span className="text-[13px] lg:text-[14px] font-bold text-gray-900 truncate">
+                    {/* Avatar + Title — same layout as sidebar row */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0 lg:ml-2">
+                      {/* Initials circle — same as SessionAvatar, with breathing ring */}
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold flex-shrink-0 transition-all duration-500 ${
+                        agentStatuses[id] === "thinking"
+                          ? "bg-blue-50 text-[#007AFF] breathing-glow-ring"
+                          : "bg-blue-50 text-[#007AFF]"
+                      }`}>
+                        {(agent?.title || "?").substring(0, 2).toUpperCase()}
+                      </div>
+
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[14px] font-bold text-gray-900 truncate leading-tight">
                           {agent?.title || "Untitled Chat"}
                         </span>
+                        {/* Model picker — visible on all screen sizes */}
+                        <div className="relative flex-shrink-0">
+                          <select
+                            value={agent?.model || 'sonnet'}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              switchAgentModel(id, e.target.value);
+                            }}
+                            className="appearance-none bg-gray-100/70 hover:bg-gray-200/70 text-gray-500 hover:text-gray-700 text-[11px] font-medium rounded-full pl-2 pr-5 py-0.5 border-none outline-none cursor-pointer transition-colors capitalize"
+                            title="Switch model"
+                          >
+                            <option value="sonnet">Sonnet</option>
+                            <option value="haiku">Haiku</option>
+                            <option value="opus">Opus</option>
+                          </select>
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <path d="m6 9 6 6 6-6"/>
+                          </svg>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity min-w-[60px] justify-end">
+
+                    {/* Action buttons — visible on hover */}
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity min-w-[44px] justify-end">
                       {agent && <button onClick={(e) => { e.stopPropagation(); killAgent(agent); }} className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
                       <button onClick={(e) => { e.stopPropagation(); removeFromStage(id); }} className="w-4 h-4 rounded-full bg-[#ffbd2e] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M5 12h14"/></svg></button>
                     </div>
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <ChatView 
+                    <ChatView
                       key={id}
-                      agentId={id} 
-                      onTitleUpdate={handleTitleUpdate} 
-                      onUnreadReset={handleUnreadReset} 
+                      agentId={id}
+                      onTitleUpdate={(title) => handleTitleUpdate(id, title)}
+                      onUnreadReset={() => handleUnreadReset(id)}
+                      onStatusChange={handleStatusChange}
                       onModelSwitch={switchAgentModel}
                       currentModel={agent?.model || "sonnet"}
-                      isTiled={activeAgentIds.length > 1} 
+                      isTiled={activeAgentIds.length > 1}
                     />
                   </div>
                 </div>

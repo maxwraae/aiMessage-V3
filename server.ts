@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import type { IncomingMessage } from "node:http";
 import { readFileSync, writeFileSync, unlinkSync, existsSync, appendFileSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join, extname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as os from "node:os";
 import { execSync } from "node:child_process";
@@ -141,22 +141,29 @@ const server = createServer(async (req, res) => {
     req.on("data", (chunk) => (body += chunk));
     req.on("end", async () => {
       try {
-        const { name, path: customPath, model } = JSON.parse(body);
-        if (!name) throw new Error("Project name is required");
-        
-        const projectPath = createProjectFolder(name, customPath);
+        const { path: dirPath, name, model } = JSON.parse(body);
+        if (!dirPath) throw new Error("Project path is required");
+
+        const projectPath = createProjectFolder(dirPath, name);
+        const displayName = name || basename(projectPath);
+        const sessionModel = model || "sonnet";
         const sessionId = crypto.randomUUID();
-        await engine.create(sessionId, projectPath, model || "sonnet");
-        
+        await engine.create(sessionId, projectPath, sessionModel);
+
         res.writeHead(201, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ 
-          projectPath, 
+        res.end(JSON.stringify({
+          projectPath,
           agent: {
             id: sessionId,
             type: "chat",
-            title: name,
-            status: "running"
-          } 
+            title: displayName,
+            projectPath,
+            model: sessionModel,
+            status: "running",
+            agentStatus: "idle",
+            unreadCount: 0,
+            startedAt: new Date().toISOString()
+          }
         }));
       } catch (err) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -214,7 +221,9 @@ const server = createServer(async (req, res) => {
         agentId: session.id,
         agentStatus: state?.status === 'busy' ? 'thinking' : 'idle',
         status: state?.status === 'sleeping' ? 'stopped' : 'running',
-        unreadCount: 0 // Will be handled by journal later
+        hasUnread: state?.hasUnread || false,
+        latestNotification: state?.latestNotification || null,
+        unreadCount: 0 // Keep for backwards compat
       };
     }));
 
@@ -231,11 +240,13 @@ const server = createServer(async (req, res) => {
       return {
         id,
         type: "chat",
-        title: "Chat", // We'll improve naming later
+        title: (state as any)?.title || "Chat",
         projectPath: state?.projectPath || "",
         model: state?.model,
         status: "running",
-        agentStatus: state?.status === 'busy' ? 'thinking' : 'idle'
+        agentStatus: state?.status === 'busy' ? 'thinking' : 'idle',
+        hasUnread: state?.hasUnread || false,
+        latestNotification: state?.latestNotification || null
       };
     }));
 
@@ -255,17 +266,19 @@ const server = createServer(async (req, res) => {
           model?: string;
         };
         
+        const projectPath = payload.projectPath.replace(/^~/, os.homedir());
         const sessionId = payload.resumeSessionId || crypto.randomUUID();
-        await engine.create(sessionId, payload.projectPath, payload.model || "sonnet");
-        
-        // Wake it up immediately with an empty nudge or just ensure it's ready
-        // We'll return the agent object the UI expects
+        await engine.create(sessionId, projectPath, payload.model || "sonnet");
+
+        const state = await engine.getState(sessionId);
+        const title = (state as any)?.title || (payload.resumeSessionId ? "Chat" : "New Chat");
+
         res.writeHead(201, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
           id: sessionId,
           type: "chat",
-          title: "Chat",
-          projectPath: payload.projectPath,
+          title,
+          projectPath,
           model: payload.model || "sonnet",
           status: "running",
           agentStatus: "idle",
@@ -282,9 +295,14 @@ const server = createServer(async (req, res) => {
 
   if (req.url?.match(/^\/api\/agents\/([^/]+)$/) && req.method === "DELETE") {
     const id = req.url.match(/^\/api\/agents\/([^/]+)$/)![1];
-    engine.interrupt(id);
-    res.writeHead(204);
-    res.end();
+    try {
+      await engine.interrupt(id);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ interrupted: id }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: String(err) }));
+    }
     return;
   }
 
@@ -309,6 +327,26 @@ const server = createServer(async (req, res) => {
       await engine.destroy(id, true);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: String(err) }));
+    }
+    return;
+  }
+
+  if (req.url === "/api/status" && req.method === "GET") {
+    const status = engine.getSystemStatus();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(status));
+    return;
+  }
+
+  if (req.url === "/api/emergency-stop" && req.method === "POST") {
+    try {
+      console.log('[Server] Emergency stop triggered');
+      const killed = await engine.killAll();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ killed, count: killed.length }));
     } catch (err) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: String(err) }));
@@ -410,11 +448,34 @@ wss.on("connection", (ws, req: IncomingMessage) => {
       pump().catch(() => {});
     });
 
-    // 2. Handle User Input (Queuing)
+    // 2. Forward chat_title_update engine events to this WebSocket
+    const titleHandler = ({ sessionId: sid, title }: { sessionId: string; title: string }) => {
+      if (sid === sessionId && ws.readyState === 1) {
+        ws.send(JSON.stringify({ type: "chat_title_update", title }) + "\n");
+      }
+    };
+    engine.on("chat_title_update", titleHandler);
+
+    // 3. Handle User Input (Queuing)
     ws.on("message", (raw) => {
       try {
         const msg = JSON.parse(raw.toString()) as ChatWsClientMessage;
         if (msg.type === "user_input") {
+          if (msg.text.trim() === "/clear") {
+            console.log(`[WS] /clear received for session ${sessionId} — interrupting Claude`);
+            engine.interrupt(sessionId).catch((err: unknown) => {
+              console.error(`[WS] interrupt failed:`, err);
+            });
+            ws.send(JSON.stringify({ type: "context_cleared" }));
+            return;
+          }
+          if (msg.text.trim() === "/plan") {
+            console.log(`[WS] /plan received for session ${sessionId} — substituting planning instruction`);
+            const planningInstruction = "Enter planning mode. Think through the problem step by step and present a complete plan. Do not take any actions — no file edits, no shell commands, no tool use — until the user explicitly tells you to proceed. Present the plan clearly so it can be reviewed and approved.";
+            engine.submit(sessionId, "ws-client", planningInstruction);
+            ws.send(JSON.stringify({ type: "plan_mode_entered" }));
+            return;
+          }
           console.log(`[WS] Queuing user_input for session ${sessionId}: "${msg.text}"`);
           engine.submit(sessionId, "ws-client", msg.text);
         }
@@ -424,6 +485,7 @@ wss.on("connection", (ws, req: IncomingMessage) => {
     });
 
     ws.on("close", () => {
+      engine.off("chat_title_update", titleHandler);
       // Stream will close naturally via reader loop check
     });
     return;

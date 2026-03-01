@@ -24,7 +24,27 @@ unset CLAUDE_CODE CLAUDECODE TERM_PROGRAM TERM_PROGRAM_VERSION
 # with its own process group and receives SIGINT normally.
 trap 'echo "[wrapper] SIGINT caught, continuing loop..." >> "$ERR"' INT
 
+RESTART_COUNT=0
+MAX_RAPID_RESTARTS=5
+RESTART_WINDOW_SECS=60
+LAST_START=0
+
 while true; do
+  # --- Circuit breaker ---
+  NOW=$(date +%s)
+  if [ $((NOW - LAST_START)) -gt "$RESTART_WINDOW_SECS" ]; then
+    RESTART_COUNT=0
+  fi
+  RESTART_COUNT=$((RESTART_COUNT + 1))
+  LAST_START=$NOW
+
+  if [ "$RESTART_COUNT" -gt "$MAX_RAPID_RESTARTS" ]; then
+    echo "[wrapper] Circuit breaker tripped: Claude crashed ${RESTART_COUNT} times in ${RESTART_WINDOW_SECS}s. Terminating session." >> "$ERR"
+    echo "{\"type\":\"stream_item\",\"item\":{\"kind\":\"system\",\"text\":\"[wrapper] Circuit breaker tripped: Claude crashed 5 times in 60s. Session terminated.\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}" >> "$OUT"
+    exit 1
+  fi
+  # --- End circuit breaker ---
+
   # Check for resume ID (written by server when it sees system.init)
   RESUME_FLAG=""
   if [ -f "$SESSION_DIR/resume_id" ]; then
@@ -57,6 +77,14 @@ while true; do
   # Write a system marker to out.jsonl so observers know Claude exited
   echo "{\"type\":\"stream_item\",\"item\":{\"kind\":\"system\",\"text\":\"[wrapper] Claude process exited, awaiting reconnection...\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}" >> "$OUT"
 
-  # Brief pause before retrying
-  sleep 1
+  # Exponential backoff before retrying
+  if [ "$RESTART_COUNT" -le 1 ]; then
+    BACKOFF=1
+  elif [ "$RESTART_COUNT" -le 3 ]; then
+    BACKOFF=3
+  else
+    BACKOFF=10
+  fi
+  echo "[wrapper] Backing off ${BACKOFF}s before restart (restart #${RESTART_COUNT})..." >> "$ERR"
+  sleep "$BACKOFF"
 done

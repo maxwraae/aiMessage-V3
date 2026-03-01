@@ -15,6 +15,9 @@ export interface SessionMetadata {
   status: SessionStatus;
   lastSeen: string;
   lastProcessedInputId?: string;
+  lastResultAt?: string;      // timestamp of most recent result frame
+  lastViewedAt?: string;      // timestamp of last active WebSocket observation
+  createdAt?: string;         // timestamp when session was first created
 }
 
 export interface InputEntry {

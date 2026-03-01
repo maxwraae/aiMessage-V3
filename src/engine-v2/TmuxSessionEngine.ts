@@ -8,8 +8,19 @@ import * as os from 'node:os';
 import * as crypto from 'node:crypto';
 import * as readline from 'node:readline';
 import { spawn, ChildProcess } from 'node:child_process';
+import { executeOneShot } from '../../lib/claude-one-shot.js';
+import { isManuallyRenamed, setSessionTitle, getSessionTitle } from '../../session-discovery.js';
 
 const SESSIONS_BASE = path.join(os.homedir(), '.aimessage', 'sessions');
+
+const GOVERNANCE = {
+  MAX_CONCURRENT_SESSIONS: 5,
+  MAX_TMUX_SESSIONS: 10,
+  ORPHAN_BUSY_TIMEOUT_MS: 60 * 60 * 1000,
+  IDLE_REAP_MS: 10 * 60 * 1000,
+  SESSION_TTL_MS: 4 * 60 * 60 * 1000,
+  REAPER_INTERVAL_MS: 30 * 1000,
+} as const;
 
 /**
  * TmuxSessionEngine — manages Claude sessions via tmux + FIFOs.
@@ -31,7 +42,10 @@ export class TmuxSessionEngine extends EventEmitter {
   private sessionStatus = new Map<string, 'sleeping' | 'idle' | 'busy'>();
   private monitors = new Map<string, { lastActivity: number }>();
   private sessionWatchers = new Map<string, { process: ChildProcess; refCount: number }>();
+  private activeObservers: Map<string, number> = new Map(); // sessionId → observer count
   private reaperInterval: NodeJS.Timeout | null = null;
+  private busySince = new Map<string, number>();            // sessionId → timestamp when busy started
+  private processingLock = new Set<string>();               // prevent double submit race
 
   constructor() {
     super();
@@ -65,7 +79,7 @@ export class TmuxSessionEngine extends EventEmitter {
    */
   async create(sessionId: string, projectPath: string, model: string): Promise<void> {
     const journal = await this.getJournal(sessionId);
-    await journal.updateMetadata({ sessionId, projectPath, model, status: 'sleeping' });
+    await journal.updateMetadata({ sessionId, projectPath, model, status: 'sleeping', createdAt: new Date().toISOString() });
     console.log(`[TmuxEngine] Configured session ${sessionId}: model=${model}`);
     await this.ensureAwake(sessionId);
   }
@@ -152,10 +166,22 @@ export class TmuxSessionEngine extends EventEmitter {
         statusChangeHandler = null;
       }
       self.releaseTransformWatcher(sessionId);
+
+      // Decrement observer count
+      const count = (self.activeObservers.get(sessionId) || 1) - 1;
+      if (count <= 0) {
+        self.activeObservers.delete(sessionId);
+      } else {
+        self.activeObservers.set(sessionId, count);
+      }
     };
 
     return new ReadableStream({
       async start(controller) {
+        // Track this observer and mark session as viewed
+        self.activeObservers.set(sessionId, (self.activeObservers.get(sessionId) || 0) + 1);
+        await journal.updateMetadata({ lastViewedAt: new Date().toISOString() });
+
         // 1. Hydrate from Claude vault
         const meta = await journal.getMetadata();
         if (meta?.projectPath) {
@@ -254,16 +280,38 @@ export class TmuxSessionEngine extends EventEmitter {
   }
 
   /**
-   * Returns current session metadata with live status overlay.
+   * Returns current session metadata with live status overlay,
+   * plus computed unread state and latest notification subject.
    */
-  async getState(sessionId: string): Promise<SessionMetadata | null> {
+  async getState(sessionId: string): Promise<(SessionMetadata & { hasUnread: boolean; latestNotification?: string }) | null> {
     const journal = await this.getJournal(sessionId);
     const meta = await journal.getMetadata();
-    if (meta) {
-      const status = this.sessionStatus.get(sessionId);
-      if (status) meta.status = status;
+    if (!meta) return null;
+
+    const liveStatus = this.sessionStatus.get(sessionId);
+    if (liveStatus) meta.status = liveStatus;
+
+    const hasUnread = !!(meta.lastResultAt && (!meta.lastViewedAt || meta.lastResultAt > meta.lastViewedAt));
+
+    let latestNotification: string | undefined;
+    if (hasUnread) {
+      // Scan output history backwards for the most recent notification after lastViewedAt
+      const history = await journal.readOutputHistory();
+      const viewedAt = meta.lastViewedAt || '1970-01-01';
+      for (let i = history.length - 1; i >= 0; i--) {
+        try {
+          const frame = JSON.parse(history[i]);
+          if (frame.type === 'stream_item' && frame.item?.kind === 'notification') {
+            if (frame.item.timestamp > viewedAt) {
+              latestNotification = frame.item.subject;
+              break;
+            }
+          }
+        } catch { continue; }
+      }
     }
-    return meta;
+
+    return { ...meta, hasUnread, latestNotification };
   }
 
   /**
@@ -301,6 +349,7 @@ export class TmuxSessionEngine extends EventEmitter {
       if (status === 'busy') {
         console.log(`[TmuxEngine] Interrupt fallback: forcing ${sessionId} to idle`);
         this.sessionStatus.set(sessionId, 'idle');
+        this.busySince.delete(sessionId);
         const journal = await this.getJournal(sessionId);
         await journal.updateMetadata({ status: 'idle' });
         this.emit('status_change', { sessionId, status: 'idle' });
@@ -433,6 +482,8 @@ export class TmuxSessionEngine extends EventEmitter {
     this.sessionStatus.delete(sessionId);
     this.monitors.delete(sessionId);
     this.pendingWakes.delete(sessionId);
+    this.busySince.delete(sessionId);
+    this.processingLock.delete(sessionId);
 
     console.log(`[TmuxEngine] Destroyed session ${sessionId} (deleteFiles=${deleteFiles})`);
   }
@@ -445,6 +496,16 @@ export class TmuxSessionEngine extends EventEmitter {
    */
   private async ensureAwake(sessionId: string): Promise<void> {
     if (this.fifos.has(sessionId)) return; // Already connected
+
+    // Governance: enforce concurrent session limit
+    if (this.fifos.size >= GOVERNANCE.MAX_CONCURRENT_SESSIONS) {
+      // Try to hibernate the oldest idle session to make room
+      const reaped = this.reapOldestIdle();
+      if (!reaped) {
+        throw new Error(`Session limit reached (${GOVERNANCE.MAX_CONCURRENT_SESSIONS} concurrent). All sessions are busy.`);
+      }
+    }
+
     if (this.pendingWakes.has(sessionId)) {
       await this.pendingWakes.get(sessionId);
       return;
@@ -543,6 +604,8 @@ export class TmuxSessionEngine extends EventEmitter {
    * Finds the next unprocessed input from in.jsonl and writes it to the FIFO.
    */
   private async processNextInput(sessionId: string): Promise<void> {
+    if (this.processingLock.has(sessionId)) return;
+    this.processingLock.add(sessionId);
     try {
       const journal = await this.getJournal(sessionId);
       const meta = await journal.getMetadata();
@@ -563,6 +626,7 @@ export class TmuxSessionEngine extends EventEmitter {
       await this.ensureAwake(sessionId);
 
       this.sessionStatus.set(sessionId, 'busy');
+      this.busySince.set(sessionId, Date.now());
       this.emit('status_change', { sessionId, status: 'busy' });
       await journal.updateMetadata({ status: 'busy' });
 
@@ -636,6 +700,8 @@ export class TmuxSessionEngine extends EventEmitter {
       console.error(`[TmuxEngine] processNextInput error for ${sessionId}:`, err);
       this.sessionStatus.set(sessionId, 'idle');
       this.emit('status_change', { sessionId, status: 'idle' });
+    } finally {
+      this.processingLock.delete(sessionId);
     }
   }
 
@@ -733,16 +799,46 @@ export class TmuxSessionEngine extends EventEmitter {
 
         for (const block of contents) {
           if (block.type === 'text' && block.text) {
+            let text: string = block.text;
+            let notificationSubject: string | null = null;
+
+            // Extract ::notify lines (last one wins)
+            const notifyRegex = /^::notify\s+(.+)$/gm;
+            let match;
+            while ((match = notifyRegex.exec(text)) !== null) {
+              notificationSubject = match[1].trim();
+            }
+
+            // Strip all ::notify lines from visible text
+            const cleanText = text.replace(/^::notify\s+.+$/gm, '').trim();
+
+            // Use cleaned text for assistant_message, fall back to subject if stripping left it empty
+            const visibleText = cleanText || notificationSubject || '';
+
             const uiFrame = {
               type: 'stream_item',
               item: {
                 kind: 'assistant_message',
-                text: block.text,
+                text: visibleText,
                 id: crypto.randomBytes(3).toString('hex'),
                 timestamp: new Date().toISOString()
               }
             };
             await fsPromises.appendFile(outPath, JSON.stringify(uiFrame) + '\n');
+
+            // Write notification stream_item if present
+            if (notificationSubject) {
+              const notifFrame = {
+                type: 'stream_item',
+                item: {
+                  kind: 'notification',
+                  subject: notificationSubject,
+                  id: crypto.randomBytes(3).toString('hex'),
+                  timestamp: new Date().toISOString()
+                }
+              };
+              await fsPromises.appendFile(outPath, JSON.stringify(notifFrame) + '\n');
+            }
           } else if (block.type === 'thinking' && block.thinking) {
             const uiFrame = {
               type: 'stream_item',
@@ -752,6 +848,59 @@ export class TmuxSessionEngine extends EventEmitter {
                 id: crypto.randomBytes(3).toString('hex'),
                 timestamp: new Date().toISOString(),
                 status: 'ready'
+              }
+            };
+            await fsPromises.appendFile(outPath, JSON.stringify(uiFrame) + '\n');
+          } else if (block.type === 'tool_use' && block.id) {
+            const uiFrame = {
+              type: 'stream_item',
+              item: {
+                kind: 'tool_call',
+                name: block.name || 'unknown',
+                input: block.input ?? {},
+                status: 'running',
+                id: block.id,
+                timestamp: new Date().toISOString()
+              }
+            };
+            await fsPromises.appendFile(outPath, JSON.stringify(uiFrame) + '\n');
+          }
+        }
+      }
+
+      // Handle tool_result frames — these arrive as user-role messages from Claude CLI
+      // containing tool_result content blocks. Each tool_result has a tool_use_id that
+      // matches the original tool_use block's id, allowing the UI to correlate and update.
+      if (frame.type === 'user' && frame.message?.content) {
+        const contents = Array.isArray(frame.message.content)
+          ? frame.message.content
+          : [frame.message.content];
+
+        for (const block of contents) {
+          if (block.type === 'tool_result' && block.tool_use_id) {
+            const isError = block.is_error === true;
+            const resultContent = block.content;
+            // Normalise result: if it's an array of content blocks, extract text
+            let result: unknown = resultContent;
+            if (Array.isArray(resultContent)) {
+              const texts = resultContent
+                .filter((b: any) => b.type === 'text' && b.text)
+                .map((b: any) => b.text as string);
+              result = texts.length === 1 ? texts[0] : texts.length > 1 ? texts.join('\n') : resultContent;
+            }
+
+            const uiFrame = {
+              type: 'stream_item',
+              item: {
+                kind: 'tool_call',
+                // name and input are unknown at this point; the UI merges by id so the
+                // existing running entry keeps its name/input and only status/result update.
+                name: '',
+                input: {},
+                result,
+                status: isError ? 'failed' : 'completed',
+                id: block.tool_use_id,
+                timestamp: new Date().toISOString()
               }
             };
             await fsPromises.appendFile(outPath, JSON.stringify(uiFrame) + '\n');
@@ -781,9 +930,26 @@ export class TmuxSessionEngine extends EventEmitter {
       ) {
         console.log(`[TmuxEngine] Turn complete for ${sessionId}`);
         this.sessionStatus.set(sessionId, 'idle');
-        await journal.updateMetadata({ status: 'idle' });
+        this.busySince.delete(sessionId);
+        const observerCount = this.activeObservers.get(sessionId) || 0;
+        const metaUpdate: Partial<import('./JournalManager.js').SessionMetadata> = { status: 'idle', lastResultAt: new Date().toISOString() };
+        if (observerCount > 0) {
+          metaUpdate.lastViewedAt = metaUpdate.lastResultAt;
+        }
+        await journal.updateMetadata(metaUpdate);
         this.emit('status_change', { sessionId, status: 'idle' });
         this.monitors.set(sessionId, { lastActivity: Date.now() });
+
+        // First naming: after turn 2, if no title yet and not manually renamed
+        if (!isManuallyRenamed(sessionId) && !getSessionTitle(sessionId)) {
+          const history = await journal.readOutputHistory();
+          const userTurns = history.filter(line => {
+            try { const f = JSON.parse(line); return f.type === 'stream_item' && f.item?.kind === 'user_message'; } catch { return false; }
+          }).length;
+          if (userTurns >= 2) {
+            this.autoNameSession(sessionId, journal).catch(() => {});
+          }
+        }
 
         // Process next queued input (with small delay to let state settle)
         setTimeout(() => this.processNextInput(sessionId), 100);
@@ -793,32 +959,202 @@ export class TmuxSessionEngine extends EventEmitter {
     }
   }
 
+  // ── Private: Auto-Naming ──────────────────────────────
+
+  private static readonly NAMING_PROMPT =
+    'Read the conversation and give it a short name — 2 to 4 words. The name should be how the person would refer to this work out loud to themselves. Think "That auth bug" not "Authentication Bug Fix." Think "Csv export" not "Implementing CSV Export Functionality." Be casual, first letter capital, all following lowercase, specific. Use the words the person actually used, not technical synonyms. If they said "that weird thing with the routes" the title is "weird routes thing." If the work is about a specific file, the filename might be the best title. Never use gerunds like "fixing" or "implementing." Never describe what the AI did. Name what the work is about.';
+
+  private async autoNameSession(sessionId: string, journal: JournalManager): Promise<void> {
+    try {
+      const history = await journal.readOutputHistory();
+      const lines: string[] = [];
+
+      for (const line of history) {
+        try {
+          const frame = JSON.parse(line);
+          if (frame.type === 'stream_item') {
+            const { kind, text } = frame.item;
+            if (kind === 'user_message' && text) lines.push(`USER: ${text}`);
+            else if (kind === 'assistant_message' && text) lines.push(`ASSISTANT: ${text}`);
+          }
+        } catch { /* skip unparseable */ }
+      }
+
+      if (lines.length === 0) return;
+
+      const transcript = lines.join('\n');
+      const title = await executeOneShot({
+        model: 'haiku',
+        sterile: true,
+        systemPrompt: TmuxSessionEngine.NAMING_PROMPT,
+        prompt: transcript
+      });
+
+      const cleaned = title.trim();
+      if (!cleaned || cleaned.length > 60) return;
+
+      setSessionTitle(sessionId, cleaned);
+      this.emit('chat_title_update', { sessionId, title: cleaned });
+      console.log(`[TmuxEngine] Auto-named session ${sessionId}: "${cleaned}"`);
+    } catch (err) {
+      console.error(`[TmuxEngine] autoNameSession failed for ${sessionId}:`, err);
+    }
+  }
+
   // ── Private: Reaper ───────────────────────────────────
 
   /**
-   * Periodically checks for idle sessions (10min no activity) and hibernates
-   * them by closing the FIFO. This causes Claude to get EOF and exit, but the
-   * tmux session stays alive — wrapper.sh loops and waits for the next FIFO open.
+   * Closes a session's FIFO, transitioning it to sleeping state.
+   * Claude gets EOF and exits; wrapper.sh loops and waits for reconnection.
+   */
+  private hibernate(sessionId: string): void {
+    const fifo = this.fifos.get(sessionId);
+    if (fifo) {
+      console.log(`[TmuxEngine] Hibernating session: ${sessionId}`);
+      try { fifo.close(); } catch { /* already closed */ }
+      this.fifos.delete(sessionId);
+      this.sessionStatus.set(sessionId, 'sleeping');
+      this.emit('status_change', { sessionId, status: 'sleeping' });
+    }
+  }
+
+  /**
+   * Finds and hibernates the oldest idle session to free up a slot.
+   * Returns true if a session was reaped, false if none are available.
+   */
+  private reapOldestIdle(): boolean {
+    let oldestId: string | null = null;
+    let oldestTime = Infinity;
+    for (const [id, monitor] of this.monitors.entries()) {
+      if (this.sessionStatus.get(id) === 'idle' && this.fifos.has(id)) {
+        if (monitor.lastActivity < oldestTime) {
+          oldestTime = monitor.lastActivity;
+          oldestId = id;
+        }
+      }
+    }
+    if (oldestId) {
+      this.hibernate(oldestId);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Periodically checks sessions and applies governance rules:
+   *   1. Idle timeout — hibernate after 10 min of inactivity
+   *   2. Orphan busy timeout — interrupt if busy >1hr with no observers
+   *   3. (Future) Session TTL — hibernate sessions older than 4 hours
    */
   private startReaper(): void {
     this.reaperInterval = setInterval(() => {
       const now = Date.now();
       for (const [id, monitor] of this.monitors.entries()) {
-        if (now - monitor.lastActivity > 10 * 60 * 1000) {
-          const fifo = this.fifos.get(id);
-          if (fifo) {
-            console.log(`[TmuxEngine] Hibernating idle session: ${id}`);
-            try {
-              fifo.close();
-            } catch {
-              /* already closed */
+        const status = this.sessionStatus.get(id);
+
+        // 1. Idle timeout — hibernate after 10 min of inactivity
+        if (status === 'idle' && this.fifos.has(id) && now - monitor.lastActivity > GOVERNANCE.IDLE_REAP_MS) {
+          this.hibernate(id);
+          // Re-name on sleep (skip if manually renamed)
+          if (!isManuallyRenamed(id)) {
+            const journal = this.journals.get(id);
+            if (journal) this.autoNameSession(id, journal).catch(() => {});
+          }
+          continue;
+        }
+
+        // 2. Orphan busy timeout — if busy for >1hr AND nobody watching, interrupt
+        if (status === 'busy') {
+          const busyStart = this.busySince.get(id);
+          const observers = this.activeObservers.get(id) || 0;
+          if (busyStart && observers === 0 && now - busyStart > GOVERNANCE.ORPHAN_BUSY_TIMEOUT_MS) {
+            console.log(`[TmuxEngine] Orphan busy timeout: ${id} has been busy for ${Math.round((now - busyStart) / 60000)}min with 0 observers. Interrupting.`);
+            this.interrupt(id).catch(err => console.error(`[TmuxEngine] Orphan interrupt failed for ${id}:`, err));
+            // Write system message so it shows in the UI
+            const journal = this.journals.get(id);
+            if (journal) {
+              const frame = JSON.stringify({
+                type: 'stream_item',
+                item: {
+                  kind: 'system',
+                  text: '[governance] Session interrupted: busy for over 1 hour with no active observers.',
+                  timestamp: new Date().toISOString()
+                }
+              });
+              journal.appendOutput(frame).catch(() => {});
             }
-            this.fifos.delete(id);
-            this.sessionStatus.set(id, 'sleeping');
-            this.emit('status_change', { sessionId: id, status: 'sleeping' });
+            continue;
+          }
+        }
+
+        // 3. Session TTL — hibernate sessions older than 4 hours
+        if (this.fifos.has(id)) {
+          const journal = this.journals.get(id);
+          if (journal) {
+            journal.getMetadata().then(meta => {
+              if (meta?.createdAt) {
+                const age = now - new Date(meta.createdAt).getTime();
+                if (age > GOVERNANCE.SESSION_TTL_MS) {
+                  console.log(`[TmuxEngine] Session TTL expired: ${id} is ${Math.round(age / 3600000)}h old. Hibernating.`);
+                  this.hibernate(id);
+                }
+              }
+            }).catch(() => {});
           }
         }
       }
-    }, 60000);
+    }, GOVERNANCE.REAPER_INTERVAL_MS);
+  }
+
+  // ── Public: Governance & Diagnostics ──────────────────
+
+  /**
+   * Destroys all known sessions. Used for emergency cleanup.
+   * Returns the list of session IDs that were destroyed.
+   */
+  async killAll(): Promise<string[]> {
+    const killed: string[] = [];
+    const allIds = [...new Set([...this.fifos.keys(), ...this.sessionStatus.keys(), ...this.monitors.keys()])];
+    for (const id of allIds) {
+      try {
+        await this.destroy(id);
+        killed.push(id);
+      } catch (err) {
+        console.error(`[TmuxEngine] killAll: failed to destroy ${id}:`, err);
+      }
+    }
+    return killed;
+  }
+
+  /**
+   * Returns a snapshot of the current system state for diagnostics.
+   */
+  getSystemStatus(): {
+    sessions: Array<{ id: string; status: string; busyForMs?: number; observers: number }>;
+    counts: { total: number; busy: number; idle: number; sleeping: number };
+    fifoCount: number;
+    governance: typeof GOVERNANCE;
+  } {
+    const sessions: Array<{ id: string; status: string; busyForMs?: number; observers: number }> = [];
+    const allIds = [...new Set([...this.fifos.keys(), ...this.sessionStatus.keys(), ...this.monitors.keys()])];
+
+    let busy = 0, idle = 0, sleeping = 0;
+    for (const id of allIds) {
+      const status = this.sessionStatus.get(id) || 'sleeping';
+      const observers = this.activeObservers.get(id) || 0;
+      const busyStart = this.busySince.get(id);
+      const busyForMs = busyStart ? Date.now() - busyStart : undefined;
+      sessions.push({ id, status, busyForMs, observers });
+      if (status === 'busy') busy++;
+      else if (status === 'idle') idle++;
+      else sleeping++;
+    }
+
+    return {
+      sessions,
+      counts: { total: allIds.length, busy, idle, sleeping },
+      fifoCount: this.fifos.size,
+      governance: GOVERNANCE,
+    };
   }
 }

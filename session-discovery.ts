@@ -28,18 +28,20 @@ const TITLE_CACHE = new Map<string, { title: string; mtime: number }>();
 
 type Metadata = {
   projectAliases: Record<string, string>; // projectKey OR path -> alias
-  sessionAliases: Record<string, string>; // sessionId -> alias
+  sessionAliases: Record<string, string>; // sessionId -> manual rename (wins forever)
+  sessionTitles: Record<string, string>;  // sessionId -> auto-generated name
 };
 
 function loadMetadata(): Metadata {
   try {
     if (fs.existsSync(METADATA_FILE)) {
-      return JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"));
+      const data = JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"));
+      return { projectAliases: {}, sessionAliases: {}, sessionTitles: {}, ...data };
     }
   } catch (err) {
     console.error("Failed to load metadata:", err);
   }
-  return { projectAliases: {}, sessionAliases: {} };
+  return { projectAliases: {}, sessionAliases: {}, sessionTitles: {} };
 }
 
 function saveMetadata(metadata: Metadata) {
@@ -62,19 +64,33 @@ export function renameSession(id: string, alias: string) {
   saveMetadata(metadata);
 }
 
-export function createProjectFolder(name: string, customPath?: string): string {
-  const baseDir = path.join(os.homedir(), "projects");
-  const projectPath = customPath 
-    ? path.resolve(customPath.replace(/^~/, os.homedir()))
-    : path.join(baseDir, name.toLowerCase().replace(/\s+/g, "-"));
+export function setSessionTitle(id: string, title: string) {
+  const metadata = loadMetadata();
+  metadata.sessionTitles[id] = title;
+  saveMetadata(metadata);
+}
+
+export function isManuallyRenamed(id: string): boolean {
+  const metadata = loadMetadata();
+  return !!metadata.sessionAliases[id];
+}
+
+export function getSessionTitle(id: string): string | undefined {
+  const metadata = loadMetadata();
+  return metadata.sessionTitles[id];
+}
+
+export function createProjectFolder(dirPath: string, name?: string): string {
+  const cleaned = dirPath.trim().replace(/^['"`]+|['"`]+$/g, '');
+  const projectPath = path.resolve(cleaned.replace(/^~/, os.homedir()));
+  const displayName = name || path.basename(projectPath);
 
   if (!fs.existsSync(projectPath)) {
     fs.mkdirSync(projectPath, { recursive: true });
   }
 
-  // Auto-alias this path to the human name
-  renameProject(projectPath, name);
-  
+  renameProject(projectPath, displayName);
+
   return projectPath;
 }
 
@@ -173,6 +189,7 @@ export function listSessions(projectKey: string): Session[] {
   const engineSessionsDir = path.join(os.homedir(), ".aimessage", "sessions");
   const claudeDir = path.join(CLAUDE_PROJECTS, projectKey);
   const requestedProjectPath = decodeProjectPath(projectKey, claudeDir);
+  const appMeta = loadMetadata();
 
   const sessions: Session[] = [];
 
@@ -189,7 +206,7 @@ export function listSessions(projectKey: string): Session[] {
               id,
               projectKey,
               projectPath: meta.projectPath,
-              title: meta.title || "New Chat",
+              title: appMeta.sessionAliases[id] || appMeta.sessionTitles[id] || meta.title || "New Chat",
               preview: "Active session",
               created: new Date(), // Shallow
               modified: new Date(meta.lastSeen || Date.now()),
