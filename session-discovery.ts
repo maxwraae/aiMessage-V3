@@ -207,7 +207,7 @@ export function listSessions(projectKey: string): Session[] {
               projectKey,
               projectPath: meta.projectPath,
               title: appMeta.sessionAliases[id] || appMeta.sessionTitles[id] || meta.title || "New Chat",
-              preview: "Active session",
+              preview: null,
               created: new Date(), // Shallow
               modified: new Date(meta.lastSeen || Date.now()),
             });
@@ -231,7 +231,7 @@ export function listSessions(projectKey: string): Session[] {
           projectKey,
           projectPath: requestedProjectPath,
           title: "Terminal Chat",
-          preview: "From Claude Vault",
+          preview: null,
           created: stat.birthtime,
           modified: stat.mtime,
         });

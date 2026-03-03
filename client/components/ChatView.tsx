@@ -77,12 +77,14 @@ function groupMessages(items: DisplayItem[]): MessageGroup[] {
     if (item.kind === "assistant_message" || item.kind === "text_delta" || item.kind === "thought") kind = "agent";
 
     const canGroup = currentGroup &&
-      currentGroup.kind === kind &&
-      (kind === "user" || kind === "agent" || kind === "tool");
+      ((currentGroup.kind === kind && (kind === "user" || kind === "agent" || kind === "tool")) ||
+       (currentGroup.kind === "agent" && kind === "tool"));
 
     if (canGroup) {
       currentGroup!.items.push(item as StreamItem);
     } else {
+      // When starting a new tool group that isn't being folded into an agent group,
+      // still use "tool" kind so standalone tool groups (after user messages) work.
       currentGroup = {
         kind,
         items: [item as StreamItem],
@@ -95,33 +97,112 @@ function groupMessages(items: DisplayItem[]): MessageGroup[] {
   return groups;
 }
 
-function TraceToolLine({ items }: { items: Extract<StreamItem, { kind: "tool_call" }>[] }) {
+function ToolPillIcon({ type, pulse }: { type: 'batch' | 'edit' | 'agent' | 'bash' | 'mcp'; pulse?: boolean }) {
+  const cls = `w-3.5 h-3.5 ${pulse ? 'animate-pulse' : ''}`;
+  switch (type) {
+    case 'batch':
+      return <svg className={cls} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="6" /></svg>;
+    case 'edit':
+      return <svg className={cls} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z" /></svg>;
+    case 'agent':
+      return <svg className={cls} viewBox="0 0 16 16" fill="currentColor"><path d="M5 3l8 5-8 5V3z" /></svg>;
+    case 'bash':
+      return <svg className={cls} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 4l4 4-4 4M9 12h4" /></svg>;
+    case 'mcp':
+      return <svg className={cls} viewBox="0 0 16 16" fill="currentColor"><path d="M9 1L4 9h4l-1 6 5-8H8l1-6z" /></svg>;
+  }
+}
+
+function getPillType(toolName: string): 'batch' | 'edit' | 'agent' | 'bash' | 'mcp' {
+  if (['Edit', 'Write', 'NotebookEdit'].includes(toolName)) return 'edit';
+  if (['Agent', 'TaskCreate', 'TaskUpdate'].includes(toolName)) return 'agent';
+  if (toolName === 'Bash') return 'bash';
+  if (toolName.startsWith('mcp_') || toolName.startsWith('mcp__')) return 'mcp';
+  return 'batch';
+}
+
+function TracePill({ items }: { items: Extract<StreamItem, { kind: "tool_call" }>[] }) {
   const [expanded, setExpanded] = useState(false);
   const running = items.filter(i => i.status === "running");
   const isRunning = running.length > 0;
 
-  // Group by tool type for summary
-  const counts: Record<string, number> = {};
+  // Build smart summary grouped by tool type with detail extraction
+  type TraceGroup = { label: string; details: string[] };
+  const groups: Record<string, TraceGroup> = {};
+
   for (const item of items) {
-    const label = item.name === "Bash" ? "bash" : item.name === "Read" ? "read" : item.name === "Grep" ? "search" : item.name === "Glob" ? "glob" : item.name === "WebSearch" ? "search" : item.name === "WebFetch" ? "fetch" : item.name.toLowerCase();
-    counts[label] = (counts[label] || 0) + 1;
+    let label: string;
+    let detail: string;
+    const inp = item.input as Record<string, any> | null;
+
+    if (item.name === "Read" && inp?.file_path) {
+      label = "read";
+      detail = String(inp.file_path).split("/").pop() || "file";
+    } else if (item.name === "Grep" && inp?.pattern) {
+      label = "search";
+      detail = `"${inp.pattern}"`;
+    } else if (item.name === "Glob" && inp?.pattern) {
+      label = "glob";
+      detail = inp.pattern;
+    } else if (item.name === "WebSearch" && inp?.query) {
+      label = "search";
+      detail = `"${String(inp.query).substring(0, 30)}"`;
+    } else if (item.name === "WebFetch" && inp?.url) {
+      label = "fetch";
+      try { detail = new URL(String(inp.url)).hostname; } catch { detail = "url"; }
+    } else if (item.name === "Bash" && inp?.command) {
+      label = "bash";
+      const cmd = String(inp.command);
+      detail = cmd.length > 30 ? cmd.substring(0, 27) + "..." : cmd;
+    } else {
+      label = item.name.toLowerCase();
+      detail = "";
+    }
+
+    if (!groups[label]) groups[label] = { label, details: [] };
+    groups[label].details.push(detail);
   }
-  const summary = Object.entries(counts).map(([k, v]) => `${v} ${v === 1 ? k : k + "s"}`).join(" · ");
+
+  const summary = Object.values(groups).map(g => {
+    const first = g.details[0];
+    const rest = g.details.length - 1;
+    const base = first ? `${g.label} ${first}` : g.label;
+    return rest > 0 ? `${base} +${rest}` : base;
+  }).join(" · ");
+
+  // Running state: show detail of the first running item
+  let runningText = "";
+  if (isRunning) {
+    const r = running[0];
+    const inp = r.input as Record<string, any> | null;
+    let detail = "";
+    if (r.name === "Read" && inp?.file_path) {
+      detail = " " + (String(inp.file_path).split("/").pop() || "");
+    } else if (r.name === "Grep" && inp?.pattern) {
+      detail = ` "${inp.pattern}"`;
+    } else if (r.name === "Glob" && inp?.pattern) {
+      detail = " " + inp.pattern;
+    } else if (r.name === "WebSearch" && inp?.query) {
+      detail = ` "${String(inp.query).substring(0, 20)}"`;
+    }
+    const base = r.name.toLowerCase();
+    const gerund = base.endsWith("e") ? base.slice(0, -1) + "ing" : base + "ing";
+    runningText = gerund + detail + "...";
+  }
 
   return (
-    <div className="w-full">
+    <div className={expanded ? "w-full" : ""}>
       <button
         onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center gap-0 h-6 group/trace"
+        className="inline-flex items-center gap-1.5 h-7 rounded-full bg-gray-100 px-3 py-1 cursor-pointer"
       >
-        <div className="flex-1 h-px bg-black/[0.04]" />
-        <span className={`px-3 text-[11px] font-medium text-gray-300 lowercase tracking-wide whitespace-nowrap ${isRunning ? "animate-pulse" : ""}`}>
-          {isRunning ? `${running[0].name.toLowerCase()}... (${items.indexOf(running[0]) + 1} of ${items.length})` : summary}
+        <ToolPillIcon type="batch" pulse={isRunning} />
+        <span className="text-[12px] text-gray-500 font-medium">
+          {isRunning ? runningText : summary}
         </span>
-        <div className="flex-1 h-px bg-black/[0.04]" />
       </button>
       {expanded && (
-        <div className="mt-1 rounded-lg border border-black/[0.04] overflow-hidden">
+        <div className="mt-1 rounded-lg border border-black/[0.04] overflow-hidden w-full">
           {items.map((item, i) => (
             <div key={item.id || i} className="flex items-center gap-3 px-3 py-1 text-[11px] border-b border-black/[0.02] last:border-b-0">
               <span className="text-gray-400 font-medium w-12 flex-shrink-0">{item.name}</span>
@@ -145,14 +226,10 @@ function TraceToolLine({ items }: { items: Extract<StreamItem, { kind: "tool_cal
   );
 }
 
-function PromotedToolCard({ item }: { item: Extract<StreamItem, { kind: "tool_call" }> }) {
+function PromotedPill({ item }: { item: Extract<StreamItem, { kind: "tool_call" }> }) {
   const [expanded, setExpanded] = useState(false);
-
-  // Determine accent color
-  const isDestructive = item.name === "Bash" && typeof item.input === "object" && item.input !== null && "command" in item.input &&
-    DESTRUCTIVE_BASH_PATTERNS.some(p => p.test(String((item.input as any).command)));
-  const isAgent = item.name === "Agent" || item.name === "TaskCreate" || item.name === "TaskUpdate";
-  const accentColor = isDestructive ? "border-l-red-400" : isAgent ? "border-l-blue-400" : "border-l-amber-400";
+  const isRunning = item.status === "running";
+  const pillType = getPillType(item.name);
 
   // Build summary text
   let summary = item.name.replace(/_/g, " ");
@@ -164,29 +241,26 @@ function PromotedToolCard({ item }: { item: Extract<StreamItem, { kind: "tool_ca
     summary = `Wrote ${file}`;
   } else if (item.name === "Bash" && typeof item.input === "object" && item.input !== null && "command" in item.input) {
     const cmd = String((item.input as any).command);
-    summary = cmd.length > 60 ? cmd.substring(0, 57) + "..." : cmd;
+    summary = cmd.length > 50 ? cmd.substring(0, 47) + "..." : cmd;
   } else if (item.name === "Agent" && typeof item.input === "object" && item.input !== null && "description" in item.input) {
     summary = `Agent: ${(item.input as any).description}`;
+  } else if (/^mcp__/.test(item.name)) {
+    summary = item.name.replace(/^mcp__[^_]+__/, "").replace(/_/g, " ");
   }
 
   return (
-    <div className="w-full">
+    <div className={expanded ? "w-full" : ""}>
       <button
         onClick={() => setExpanded(v => !v)}
-        className={`w-full flex items-center bg-gray-50/50 rounded-lg border-l-2 ${accentColor} h-8 px-3 hover:bg-gray-50 transition-colors group/promoted text-left`}
+        className="inline-flex items-center gap-1.5 h-7 rounded-full bg-gray-100 px-3 py-1 cursor-pointer"
       >
-        <span className={`text-[13px] font-medium text-gray-600 flex-1 truncate ${item.status === "running" ? "animate-pulse" : ""}`}>
+        <ToolPillIcon type={pillType} pulse={isRunning} />
+        <span className="text-[12px] text-gray-500 font-medium truncate max-w-[300px]">
           {summary}
         </span>
-        <svg
-          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
-          className={`text-gray-300 transition-transform duration-200 flex-shrink-0 ml-2 ${expanded ? "rotate-90" : ""}`}
-        >
-          <path d="m9 18 6-6-6-6"/>
-        </svg>
       </button>
       {expanded && (
-        <div className="mt-1 px-3 pb-2 space-y-2">
+        <div className="mt-1 px-3 pb-2 space-y-2 w-full">
           <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Input</div>
           <pre className="text-[11px] text-gray-600 font-mono bg-gray-50 p-2 rounded border border-black/[0.02] overflow-x-auto">
             {JSON.stringify(item.input, null, 2)}
@@ -731,8 +805,9 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-10 py-6 pb-32 touch-pan-y overscroll-contain"
+        className="flex-1 overflow-y-auto py-6 pb-32 touch-pan-y overscroll-contain"
       >
+        <div className="max-w-[720px] mx-auto w-full px-6">
         {messageGroups.map((group, gIdx) => {
           // Calculate vertical spacing based on group transitions
           const prevGroup = gIdx > 0 ? messageGroups[gIdx - 1] : null;
@@ -786,28 +861,56 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
             );
           }
           if (group.kind === "tool") {
+            // Standalone tool groups (e.g. right after a user message with no preceding agent text)
             const toolItems = group.items as Extract<StreamItem, { kind: "tool_call" }>[];
             const traceItems = toolItems.filter(i => classifyTool(i.name, i.input) === "trace");
             const promotedItems = toolItems.filter(i => classifyTool(i.name, i.input) === "promoted");
 
             return (
-              <div key={gIdx} className={`space-y-2 ${topMargin}`}>
-                {traceItems.length > 0 && <TraceToolLine items={traceItems} />}
+              <div key={gIdx} className={`flex flex-wrap items-start gap-1.5 ${topMargin}`}>
+                {traceItems.length > 0 && <TracePill items={traceItems} />}
                 {promotedItems.map((item, iIdx) => (
-                  <PromotedToolCard key={item.id || iIdx} item={item} />
+                  <PromotedPill key={item.id || iIdx} item={item} />
                 ))}
               </div>
             );
           }
           return (
             <div key={gIdx} className={topMargin}>
-              {group.items.map((item, iIdx) => (
-                <MessageBubble key={iIdx} item={item} group={group as Extract<MessageGroup, { items: StreamItem[] }>} index={iIdx} total={group.items.length} />
-              ))}
+              {group.items.map((item, iIdx) => {
+                if (item.kind === "tool_call") {
+                  // Skip if the previous item was also a tool_call — rendered in batch below
+                  const prev = group.items[iIdx - 1];
+                  if (prev && prev.kind === "tool_call") return null;
+
+                  // Collect consecutive tool_calls starting from this index
+                  const batch: Extract<StreamItem, { kind: "tool_call" }>[] = [];
+                  for (let j = iIdx; j < group.items.length && group.items[j].kind === "tool_call"; j++) {
+                    batch.push(group.items[j] as Extract<StreamItem, { kind: "tool_call" }>);
+                  }
+
+                  const traceItems = batch.filter(i => classifyTool(i.name, i.input) === "trace");
+                  const promotedItems = batch.filter(i => classifyTool(i.name, i.input) === "promoted");
+
+                  return (
+                    <div key={`tools-${iIdx}`} className="flex flex-wrap items-start gap-1.5 mt-1">
+                      {traceItems.length > 0 && <TracePill items={traceItems} />}
+                      {promotedItems.map((pi, piIdx) => (
+                        <PromotedPill key={pi.id || piIdx} item={pi} />
+                      ))}
+                    </div>
+                  );
+                }
+
+                return (
+                  <MessageBubble key={iIdx} item={item} group={group as Extract<MessageGroup, { items: StreamItem[] }>} index={iIdx} total={group.items.length} />
+                );
+              })}
             </div>
           );
         })}
         <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* Hidden file input */}
@@ -825,7 +928,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
         onSubmit={send}
         className="absolute bottom-0 left-0 right-0 z-10"
       >
-        <div className="max-w-3xl mx-auto px-4 mb-3">
+        <div className="max-w-[720px] mx-auto px-4 mb-3">
           <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.06)] p-3">
             {/* Pending image thumbnails strip */}
             {pendingImages.length > 0 && (

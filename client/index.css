@@ -9,6 +9,10 @@
 }
 
 * { box-sizing: border-box; }
+
+/* Hide all scrollbars globally */
+*::-webkit-scrollbar { display: none; }
+* { -ms-overflow-style: none; scrollbar-width: none; }
 body { 
   margin: 0; 
   overflow: hidden; 
@@ -25,7 +29,6 @@ body {
 
 .glass-sidebar {
   background-color: #f5f5f7;
-  border-right: 1px solid #d1d1d6;
 }
 
 .glass-canvas {
@@ -49,9 +52,88 @@ body {
   to { --angle: 360deg; }
 }
 
+@property --blob1-x {
+  syntax: '<percentage>';
+  initial-value: 30%;
+  inherits: false;
+}
+
+@property --blob1-y {
+  syntax: '<percentage>';
+  initial-value: 20%;
+  inherits: false;
+}
+
+@property --blob2-x {
+  syntax: '<percentage>';
+  initial-value: 70%;
+  inherits: false;
+}
+
+@property --blob2-y {
+  syntax: '<percentage>';
+  initial-value: 60%;
+  inherits: false;
+}
+
+@property --blob3-x {
+  syntax: '<percentage>';
+  initial-value: 50%;
+  inherits: false;
+}
+
+@property --blob3-y {
+  syntax: '<percentage>';
+  initial-value: 80%;
+  inherits: false;
+}
+
 .thinking-canvas {
-  background-color: #FCF5EB;
-  transition: background-color 800ms ease-in;
+  background:
+    radial-gradient(ellipse 600px 400px at var(--blob1-x, 30%) var(--blob1-y, 20%),
+      rgba(251, 191, 36, 0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at var(--blob2-x, 70%) var(--blob2-y, 60%),
+      rgba(251, 146, 60, 0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 300px at var(--blob3-x, 50%) var(--blob3-y, 80%),
+      rgba(244, 114, 182, 0.03) 0%, transparent 70%),
+    #FFFFFF;
+  animation: thinking-drift 20s ease-in-out infinite alternate;
+  transition: opacity 800ms ease-in;
+}
+
+@keyframes thinking-drift {
+  0% {
+    --blob1-x: 30%;
+    --blob1-y: 20%;
+    --blob2-x: 70%;
+    --blob2-y: 60%;
+    --blob3-x: 50%;
+    --blob3-y: 80%;
+  }
+  33% {
+    --blob1-x: 55%;
+    --blob1-y: 45%;
+    --blob2-x: 35%;
+    --blob2-y: 30%;
+    --blob3-x: 75%;
+    --blob3-y: 55%;
+  }
+  66% {
+    --blob1-x: 20%;
+    --blob1-y: 65%;
+    --blob2-x: 60%;
+    --blob2-y: 85%;
+    --blob3-x: 30%;
+    --blob3-y: 35%;
+  }
+  100% {
+    --blob1-x: 65%;
+    --blob1-y: 30%;
+    --blob2-x: 25%;
+    --blob2-y: 70%;
+    --blob3-x: 80%;
+    --blob3-y: 20%;
+  }
 }
 
 .idle-canvas {

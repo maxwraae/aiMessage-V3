@@ -37,7 +37,7 @@ type Session = {
   latestNotification?: string | null;
 };
 
-function SessionAvatar({ session, initials, liveStatus }: { session: Session; initials: string; liveStatus?: string }) {
+function SessionAvatar({ session, initials, liveStatus, isActive }: { session: Session; initials: string; liveStatus?: string; isActive?: boolean }) {
   const isThinking = (liveStatus || session.agentStatus) === "thinking";
   const isWarm = session.status === "running";
   const hasNotification = !!session.latestNotification;
@@ -48,6 +48,11 @@ function SessionAvatar({ session, initials, liveStatus }: { session: Session; in
       {/* Notification Ring */}
       {hasNotification && (
         <div className="absolute -inset-1 rounded-full border-2 border-[#007AFF] animate-pulse" />
+      )}
+
+      {/* Active (green) Ring */}
+      {isActive && (
+        <div className="absolute -inset-0.5 rounded-full ring-2 ring-[#27C93F]" />
       )}
 
       {/* The Avatar */}
@@ -325,7 +330,7 @@ export default function App() {
     <div className="fixed inset-0 flex bg-white text-gray-900 overflow-hidden font-sans">
       {/* Sidebar / Navigation Layer */}
       <div className={`
-        flex-shrink-0 w-full lg:w-[320px] border-r border-black/[0.05] flex flex-col z-10 bg-white relative
+        flex-shrink-0 w-full lg:w-[320px] flex flex-col z-10 bg-white relative
         ${currentScene === 'chat' ? 'hidden lg:flex' : 'flex'}
       `}>
         
@@ -377,7 +382,7 @@ export default function App() {
                             <div
                               key={project.key}
                               onClick={() => openProject(project)}
-                              className="flex items-center cursor-pointer group hover:bg-black/[0.03] active:bg-black/[0.05] rounded-xl mx-1 transition-all duration-200 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5"
+                              className="flex items-center cursor-pointer group hover:bg-black/[0.03] active:bg-black/[0.05] rounded-xl mx-1 transition-all duration-200 py-2 lg:py-1.5"
                             >
                               <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 ml-2 mr-3 flex-shrink-0">
                                 {initials}
@@ -414,9 +419,7 @@ export default function App() {
                         })
                         .map((session, idx, arr) => {
                           const isWarm = agents.some(ag => ag.id === session.id);
-                          const showActiveHeader = isWarm && idx === 0;
-                          const showRecentHeader = !isWarm && (idx === 0 || (idx > 0 && agents.some(ag => ag.id === arr[idx-1].id)));
-        
+
                           const initials = (session.title || "?").substring(0, 2).toUpperCase();
                           const isSelected = activeAgentIds.includes(session.id);
                           
@@ -427,28 +430,17 @@ export default function App() {
         
                           return (
                             <div key={session.id}>
-                              {showActiveHeader && (
-                                <div className="px-4 pt-4 pb-1 text-[11px] font-bold text-[#27C93F] uppercase tracking-widest flex items-center gap-2">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#27C93F] animate-pulse" />
-                                  Live Now
-                                </div>
-                              )}
-                              {showRecentHeader && (
-                                <div className="px-4 pt-4 pb-1 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-                                  Recent
-                                </div>
-                              )}
                               <div
                                 onClick={() => startAgent(session.id, false, session.projectPath)}
-                                className={`flex items-center cursor-pointer group transition-all duration-300 border-b border-black/[0.05] last:border-transparent py-2 lg:py-1.5 ${
-                                  isSelected 
-                                    ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20 border-transparent" 
-                                    : isWarm 
-                                      ? "hover:bg-black/[0.03] opacity-100 bg-blue-50/30" 
+                                className={`flex items-center cursor-pointer group transition-all duration-300 py-2 lg:py-1.5 ${
+                                  isSelected
+                                    ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20"
+                                    : isWarm
+                                      ? "hover:bg-black/[0.03] opacity-100 bg-blue-50/30"
                                       : "hover:bg-black/[0.03] opacity-60 hover:opacity-100"
                                 }`}
                               >
-                                <SessionAvatar session={{...session, status: isWarm ? 'running' : 'stopped'}} initials={initials} liveStatus={agentStatuses[session.id]} />
+                                <SessionAvatar session={{...session, status: isWarm ? 'running' : 'stopped'}} initials={initials} liveStatus={agentStatuses[session.id]} isActive={isWarm} />
                                 
                                 <div className="flex-1 min-w-0 pr-4">
                                   <div className="flex justify-between items-baseline">
@@ -498,13 +490,15 @@ export default function App() {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className={`text-[13px] lg:text-[12px] truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                                    {session.agentStatus === 'thinking'
-                                      ? 'Typing...'
-                                      : session.latestNotification
-                                        ? session.latestNotification
-                                        : (session.preview || "Active session")}
-                                  </div>
+                                  {(session.agentStatus === 'thinking' || session.latestNotification || session.preview) && (
+                                    <div className={`text-[13px] lg:text-[12px] truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                                      {session.agentStatus === 'thinking'
+                                        ? 'Typing...'
+                                        : session.latestNotification
+                                          ? session.latestNotification
+                                          : session.preview}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -514,32 +508,32 @@ export default function App() {
                   )}
                 </div>
         {/* Floating Search & Compose Dock */}
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:px-10 flex items-center gap-2 z-20 pointer-events-none">
-          <div className="flex-1 h-10 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] rounded-full border border-black/[0.03] flex items-center px-3 pointer-events-auto">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400 mr-2 flex-shrink-0">
+        <div className="absolute bottom-0 left-0 right-0 px-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:px-10 z-20 pointer-events-none">
+          <div className="h-10 bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.06)] flex items-center px-3 gap-2 pointer-events-auto">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400 flex-shrink-0">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
             </svg>
-            <input 
-              type="text" 
-              placeholder="Search" 
+            <input
+              type="text"
+              placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-[16px] w-full text-gray-900 placeholder-gray-400 font-normal" 
+              className="bg-transparent border-none outline-none text-[16px] flex-1 text-gray-900 placeholder-gray-400 font-normal"
             />
-            <div className="p-1 text-gray-400 flex-shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <button className="w-8 h-8 rounded-full bg-gray-100/60 text-gray-400 flex items-center justify-center flex-shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/><path d="M8 23h8"/>
               </svg>
-            </div>
+            </button>
+            <button
+              onClick={() => startAgent()}
+              className="w-8 h-8 rounded-full bg-gray-100/60 text-gray-400 flex items-center justify-center flex-shrink-0 active:scale-95 transition-all"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={() => startAgent()}
-            className="w-10 h-10 rounded-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] border border-black/[0.03] text-gray-400 flex items-center justify-center pointer-events-auto hover:bg-white active:scale-95 transition-all flex-shrink-0"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-          </button>
         </div>
       </div>
 
@@ -560,7 +554,7 @@ export default function App() {
               const isHiddenOnMobile = index !== activeAgentIds.length - 1;
               return (
                 <div key={id} className={`bg-white flex flex-col min-h-0 overflow-hidden relative group ${isHiddenOnMobile ? "hidden lg:flex" : "flex"}`}>
-                  <div className={`h-14 lg:h-12 flex-shrink-0 flex items-center px-4 justify-between bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-[0_1px_0_rgba(0,0,0,0.04)]`}>
+                  <div className={`h-14 lg:h-12 flex-shrink-0 flex items-center px-4 justify-between bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-[0_4px_12px_rgba(0,0,0,0.03)]`}>
                     {/* Mobile back button */}
                     <button
                       onClick={goBack}
