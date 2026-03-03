@@ -77,14 +77,11 @@ function groupMessages(items: DisplayItem[]): MessageGroup[] {
     if (item.kind === "assistant_message" || item.kind === "text_delta" || item.kind === "thought") kind = "agent";
 
     const canGroup = currentGroup &&
-      ((currentGroup.kind === kind && (kind === "user" || kind === "agent" || kind === "tool")) ||
-       (currentGroup.kind === "agent" && kind === "tool"));
+      (currentGroup.kind === kind && (kind === "user" || kind === "agent" || kind === "tool"));
 
     if (canGroup) {
       currentGroup!.items.push(item as StreamItem);
     } else {
-      // When starting a new tool group that isn't being folded into an agent group,
-      // still use "tool" kind so standalone tool groups (after user messages) work.
       currentGroup = {
         kind,
         items: [item as StreamItem],
@@ -543,7 +540,20 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
         const msg = JSON.parse(e.data) as ChatWsServerMessage;
         if (msg.type === "history_snapshot") {
           console.log(`[WS] Received history_snapshot with ${msg.items.length} items`);
-          setItems(msg.items);
+          // Deduplicate tool_calls by ID — keep the last occurrence
+          // (server writes 'running' then 'completed' for each tool call)
+          const seenToolIds = new Set<string>();
+          const deduped: typeof msg.items = [];
+          for (let i = msg.items.length - 1; i >= 0; i--) {
+            const item = msg.items[i];
+            if (item.kind === "tool_call" && item.id) {
+              if (seenToolIds.has(item.id)) continue; // skip earlier duplicate
+              seenToolIds.add(item.id);
+            }
+            deduped.unshift(item);
+          }
+          console.log(`[WS] After dedup: ${deduped.length} items`);
+          setItems(deduped);
         } else if (msg.type === "stream_item") {
           const item = msg.item;
 
@@ -878,29 +888,9 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
           return (
             <div key={gIdx} className={topMargin}>
               {group.items.map((item, iIdx) => {
-                if (item.kind === "tool_call") {
-                  // Skip if the previous item was also a tool_call — rendered in batch below
-                  const prev = group.items[iIdx - 1];
-                  if (prev && prev.kind === "tool_call") return null;
-
-                  // Collect consecutive tool_calls starting from this index
-                  const batch: Extract<StreamItem, { kind: "tool_call" }>[] = [];
-                  for (let j = iIdx; j < group.items.length && group.items[j].kind === "tool_call"; j++) {
-                    batch.push(group.items[j] as Extract<StreamItem, { kind: "tool_call" }>);
-                  }
-
-                  const traceItems = batch.filter(i => classifyTool(i.name, i.input) === "trace");
-                  const promotedItems = batch.filter(i => classifyTool(i.name, i.input) === "promoted");
-
-                  return (
-                    <div key={`tools-${iIdx}`} className="flex flex-wrap items-start gap-1.5 mt-1">
-                      {traceItems.length > 0 && <TracePill items={traceItems} />}
-                      {promotedItems.map((pi, piIdx) => (
-                        <PromotedPill key={pi.id || piIdx} item={pi} />
-                      ))}
-                    </div>
-                  );
-                }
+                // tool_call items now always belong to their own "tool" group; skip any
+                // that might appear here due to stale data to prevent double-rendering.
+                if (item.kind === "tool_call") return null;
 
                 return (
                   <MessageBubble key={iIdx} item={item} group={group as Extract<MessageGroup, { items: StreamItem[] }>} index={iIdx} total={group.items.length} />

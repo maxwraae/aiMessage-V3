@@ -63,7 +63,7 @@ function SessionAvatar({ session, initials, liveStatus, isActive }: { session: S
             ? `bg-blue-50 text-[#007AFF] shadow-sm thinking-avatar`
             : isWarm
               ? 'bg-blue-50 text-[#007AFF] shadow-sm'
-              : 'bg-gray-100/50 text-gray-400'
+              : 'bg-white/50 text-gray-400'
       }`}>
         {initials}
       </div>
@@ -83,6 +83,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewStack, setViewStack] = useState<string[]>(["projects"]); // 'projects' | 'messages' | 'chat'
   const [agentStatuses, setAgentStatuses] = useState<Record<string, string>>({});
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -327,44 +328,63 @@ export default function App() {
   const currentScene = viewStack[viewStack.length - 1];
 
   return (
-    <div className="fixed inset-0 flex bg-white text-gray-900 overflow-hidden font-sans">
+    <div className="fixed inset-0 flex text-gray-900 overflow-hidden font-sans" style={{ backgroundColor: 'var(--surface)' }}>
       {/* Sidebar / Navigation Layer */}
       <div className={`
-        flex-shrink-0 w-full lg:w-[320px] flex flex-col z-10 bg-white relative
-        ${currentScene === 'chat' ? 'hidden lg:flex' : 'flex'}
+        flex-shrink-0 w-full lg:w-[320px] flex flex-col z-10 relative
+        ${currentScene === 'chat' ? 'hidden' : 'flex'} ${sidebarVisible ? 'lg:flex' : 'lg:hidden'}
       `}>
         
         {/* Navigation Header */}
-        <div className="pt-12 lg:pt-8 px-6 pb-2 flex flex-col items-start gap-0.5">
+        <div className="pt-12 lg:pt-6 px-6 pb-2 flex flex-col items-start gap-0.5">
           {viewStack.length === 1 && (
-            <div className="flex items-center justify-between w-full pr-2">
-              <h1 className="text-[28px] lg:text-[20px] font-bold tracking-tight text-gray-900 px-1">Projects</h1>
-              <button 
-                onClick={(e) => { e.stopPropagation(); handleCreateProject(); }}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[#3478F6] hover:bg-black/[0.05] active:scale-95 transition-all"
-                title="New Project"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 5v14M5 12h14"/>
-                </svg>
-              </button>
+            <div className="flex items-center justify-between w-full">
+              <h1 className="text-[20px] font-semibold text-gray-900 px-1">Projects</h1>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleCreateProject(); }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[#3478F6] hover:bg-black/[0.05] active:scale-95 transition-all"
+                  title="New Project"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setSidebarVisible(v => !v)}
+                  className="hidden lg:flex w-7 h-7 rounded-lg items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-black/[0.04] transition-all"
+                  title="Hide sidebar"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
           {viewStack.length > 1 && (
-            <>
-              <h1 className="text-[28px] lg:text-[20px] font-bold tracking-tight text-gray-900 px-1">Messages</h1>
+            <div className="flex items-center justify-between w-full">
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 text-[#3478F6] active:opacity-50 transition-opacity ml-[-12px] h-12 px-3 group"
+                className="flex items-center gap-1 text-[#3478F6] active:opacity-50 transition-opacity"
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="group-active:scale-95 transition-transform">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m15 18-6-6 6-6"/>
                 </svg>
-                <span className="text-[17px] font-medium">
-                  {viewStack[viewStack.length - 2] === 'projects' ? 'Projects' : unreadTotal || ''}
-                </span>
+                <span className="text-[17px] font-medium">{selectedProject?.name || 'Messages'}</span>
               </button>
-            </>
+              <button
+                onClick={() => setSidebarVisible(v => !v)}
+                className="hidden lg:flex w-7 h-7 rounded-lg items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-black/[0.04] transition-all"
+                title="Hide sidebar"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="9" y1="3" x2="9" y2="21"/>
+                </svg>
+              </button>
+            </div>
           )}
         </div>
 
@@ -384,7 +404,7 @@ export default function App() {
                               onClick={() => openProject(project)}
                               className="flex items-center cursor-pointer group hover:bg-black/[0.03] active:bg-black/[0.05] rounded-xl mx-1 transition-all duration-200 py-2 lg:py-1.5"
                             >
-                              <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 ml-2 mr-3 flex-shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-white/60 flex items-center justify-center text-[12px] lg:text-[11px] font-bold text-gray-500 ml-2 mr-3 flex-shrink-0">
                                 {initials}
                               </div>
                               <div className="flex-1 min-w-0 pr-4">
@@ -434,9 +454,9 @@ export default function App() {
                                 onClick={() => startAgent(session.id, false, session.projectPath)}
                                 className={`flex items-center cursor-pointer group transition-all duration-300 py-2 lg:py-1.5 ${
                                   isSelected
-                                    ? "bg-[#3478F6] text-white rounded-xl mx-1 shadow-md shadow-[#3478F6]/20"
+                                    ? "bg-black/[0.06] rounded-xl mx-1"
                                     : isWarm
-                                      ? "hover:bg-black/[0.03] opacity-100 bg-blue-50/30"
+                                      ? "hover:bg-black/[0.03] opacity-100 bg-white/40"
                                       : "hover:bg-black/[0.03] opacity-60 hover:opacity-100"
                                 }`}
                               >
@@ -445,23 +465,23 @@ export default function App() {
                                 <div className="flex-1 min-w-0 pr-4">
                                   <div className="flex justify-between items-baseline">
                                     <span className={`text-[15px] lg:text-[14px] truncate flex items-center gap-1.5 ${
-                                      isSelected ? 'text-white font-bold'
+                                      isSelected ? 'text-gray-900 font-bold'
                                       : session.hasUnread ? 'text-gray-900 font-bold'
                                       : 'text-gray-900 font-normal'
                                     }`}>
-                                      {session.hasUnread && !isSelected && (
+                                      {session.hasUnread && (
                                         <span className="inline-block w-2 h-2 rounded-full bg-[#007AFF] flex-shrink-0" />
                                       )}
                                       {session.title ?? session.id.slice(0, 8)}
                                     </span>
                                     <div className="relative flex-shrink-0 ml-2 h-full flex items-center min-w-[40px] justify-end">
-                                      <span className={`text-[12px] lg:text-[11px] font-medium transition-opacity duration-200 group-hover:opacity-0 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
+                                      <span className={`text-[12px] lg:text-[11px] font-medium transition-opacity duration-200 group-hover:opacity-0 text-gray-400`}>
                                         {timestampStr}
                                       </span>
                                       <div className="absolute right-0 flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 py-1 items-center justify-center h-full">
                                         <button 
                                           onClick={(e) => { e.stopPropagation(); handleRenameSession(session); }} 
-                                          className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 group/btn ${isSelected ? 'bg-white/20' : 'bg-gray-400'}`}
+                                          className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 group/btn bg-gray-400`}
                                         >
                                           <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -477,7 +497,7 @@ export default function App() {
                                             </svg>
                                           </button>
                                         )}
-                                        {!isSelected && activeAgentIds.length < 4 && (
+                                        {activeAgentIds.length < 4 && (
                                           <button
                                             onClick={(e) => { e.stopPropagation(); startAgent(session.id, true); }}
                                             className="w-3.5 h-3.5 rounded-full bg-[#27c93f] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"
@@ -491,7 +511,7 @@ export default function App() {
                                     </div>
                                   </div>
                                   {(session.agentStatus === 'thinking' || session.latestNotification || session.preview) && (
-                                    <div className={`text-[13px] lg:text-[12px] truncate ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                                    <div className={`text-[13px] lg:text-[12px] truncate text-gray-500`}>
                                       {session.agentStatus === 'thinking'
                                         ? 'Typing...'
                                         : session.latestNotification
@@ -538,7 +558,20 @@ export default function App() {
       </div>
 
       {/* Main area - The Stage */}
-      <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${currentScene !== 'chat' ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-transparent relative ${currentScene !== 'chat' ? 'hidden lg:flex' : 'flex'}`}>
+        {/* Sidebar toggle — absolute, only shown when sidebar is hidden */}
+        {!sidebarVisible && (
+          <button
+            onClick={() => setSidebarVisible(true)}
+            className="absolute top-3 left-3 z-40 hidden lg:flex w-7 h-7 rounded-lg items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-black/[0.04] transition-all"
+            title="Show sidebar"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+          </button>
+        )}
         {onboardingProject ? (
           <ProjectOnboardingView 
             onComplete={completeOnboarding}
@@ -548,13 +581,13 @@ export default function App() {
             }}
           />
         ) : activeAgentIds.length > 0 ? (
-          <div className={`flex-1 grid gap-px bg-black/[0.05] lg:${getGridClass(activeAgentIds.length)} grid-cols-1 grid-rows-1 min-h-0`}>
+          <div className={`flex-1 grid gap-3 p-3 lg:${getGridClass(activeAgentIds.length)} grid-cols-1 grid-rows-1 min-h-0`}>
             {activeAgentIds.map((id, index) => {
               const agent = agents.find(a => a.id === id);
               const isHiddenOnMobile = index !== activeAgentIds.length - 1;
               return (
-                <div key={id} className={`bg-white flex flex-col min-h-0 overflow-hidden relative group ${isHiddenOnMobile ? "hidden lg:flex" : "flex"}`}>
-                  <div className={`h-14 lg:h-12 flex-shrink-0 flex items-center px-4 justify-between bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-[0_4px_12px_rgba(0,0,0,0.03)]`}>
+                <div key={id} className={`bg-white rounded-2xl flex flex-col min-h-0 overflow-hidden relative group ${isHiddenOnMobile ? "hidden lg:flex" : "flex"}`}>
+                  <div className="h-12 lg:h-10 flex-shrink-0 flex items-center px-4 justify-between border-b border-gray-100/60 sticky top-0 z-30">
                     {/* Mobile back button */}
                     <button
                       onClick={goBack}
@@ -565,17 +598,9 @@ export default function App() {
                       </svg>
                     </button>
 
-                    {/* Avatar + Title + Model */}
+                    {/* Title + Model */}
                     <div className="flex items-center gap-3 flex-1 min-w-0 lg:ml-2">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all duration-500 ${
-                        agentStatuses[id] === "thinking"
-                          ? "thinking-avatar"
-                          : "bg-blue-50 text-[#007AFF]"
-                      }`}>
-                        {(agent?.title || "?").substring(0, 2).toUpperCase()}
-                      </div>
-
-                      <div className="flex flex-col min-w-0">
+                      <div className="flex flex-row items-baseline gap-2 min-w-0">
                         <span className="text-[15px] font-bold text-gray-900 truncate leading-tight">
                           {agent?.title || "Untitled Chat"}
                         </span>
@@ -587,18 +612,13 @@ export default function App() {
                             const next = models[(models.indexOf(current) + 1) % models.length];
                             switchAgentModel(id, next);
                           }}
-                          className="text-[11px] text-gray-400 hover:text-gray-600 font-medium text-left transition-colors capitalize w-fit"
+                          className="text-[11px] text-gray-400 hover:text-gray-600 font-medium transition-colors capitalize flex-shrink-0"
                           title="Click to switch model"
                         >
                           {agent?.model || "sonnet"}
                         </button>
                       </div>
                     </div>
-
-                    {/* Right side: project name */}
-                    <span className="text-[13px] text-gray-400 font-medium truncate hidden lg:block max-w-[200px]">
-                      {selectedProject?.name || ""}
-                    </span>
 
                     {/* Action buttons — visible on hover */}
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity min-w-[44px] justify-end ml-2">
