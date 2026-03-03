@@ -9,6 +9,13 @@ server.log
 models/
 venv/
 
+# Uploads & transcripts
+uploads/
+*.wav
+*.mp3
+*.m4a
+*.jsonl
+
 # Environment & Secrets
 .env
 .env.*
@@ -16,4 +23,3 @@ venv/
 # OS files
 .DS_Store
 Thumbs.db
-server.log
