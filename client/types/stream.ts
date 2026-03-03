@@ -1,6 +1,13 @@
+export interface ImageAttachment {
+  base64: string;
+  mediaType: string;
+  filename?: string;
+}
+
 export type StreamItem =
   | { kind: "user_message"; text: string; id: string; timestamp: string }
   | { kind: "assistant_message"; text: string; id: string; timestamp: string }
+  | { kind: "text_delta"; text: string; id: string; timestamp: string }
   | { kind: "thought"; text: string; id: string; timestamp: string; status: "loading" | "ready" }
   | { kind: "tool_call"; name: string; input: unknown; result?: unknown; status: "running" | "completed" | "failed"; id: string; timestamp: string }
   | { kind: "error"; text: string; id: string; timestamp: string }
@@ -17,4 +24,4 @@ export type ChatWsServerMessage =
   | { type: "plan_mode_entered" };
 
 export type ChatWsClientMessage =
-  | { type: "user_input"; text: string };
+  | { type: "user_input"; text: string; images?: ImageAttachment[] };

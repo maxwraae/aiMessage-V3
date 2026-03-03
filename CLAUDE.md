@@ -2,9 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Philosophy
+
+**This is a translation layer, not a product.**
+
+aiMessage V3 does not reinvent anything Claude Code already does. Claude Code is the brain, the file handler, the tool user, the image reader, the everything. We are a thin transport layer that moves bytes between a browser and a tmux session running Claude Code.
+
+Every feature question has the same answer: **does Claude Code handle this natively?** If yes, our job is to ferry the input to Claude Code and ferry the output back. We don't parse it, don't transform it, don't add our own logic. We are a WebSocket bridge, nothing more.
+
+When in doubt, do less. If you're building something Claude Code already does, stop.
+
 ## What This Is
 
-aiMessage V3 is a web-based chat UI that wraps Claude Code's headless mode. Instead of terminal emulation, it spawns Claude with `--input-format stream-json --output-format stream-json` and proxies NDJSON events over WebSocket to a React frontend. The result is a multi-agent chat interface accessible from any device over Tailscale.
+aiMessage V3 is a web-based chat UI that wraps Claude Code's headless mode. It spawns Claude with `--input-format stream-json --output-format stream-json` and proxies NDJSON events over WebSocket to a React frontend. The result is a multi-agent chat interface accessible from any device over Tailscale.
 
 ## Commands
 

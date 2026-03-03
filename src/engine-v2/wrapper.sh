@@ -57,11 +57,24 @@ while true; do
   # cd to project directory so Claude has the right context
   cd "$PROJECT_DIR"
 
+  # Wait for server to connect to FIFO (blocks until writer opens)
+  # Server updates metadata BEFORE opening FIFO, so reading after
+  # this point guarantees we see the latest model.
+  exec 3< "$FIFO"
+
+  # Re-read model from metadata (supports runtime model switching)
+  # This runs AFTER the FIFO wait, so metadata is up to date.
+  if [ -f "$SESSION_DIR/metadata.json" ]; then
+    LIVE_MODEL=$(python3 -c "import json; print(json.load(open('$SESSION_DIR/metadata.json')).get('model',''))" 2>/dev/null)
+    if [ -n "$LIVE_MODEL" ]; then
+      MODEL="$LIVE_MODEL"
+    fi
+  fi
+
   echo "[wrapper] Starting Claude (model=$MODEL, resume=$RESUME_ID, dir=$PROJECT_DIR)" >> "$ERR"
 
-  # Blocks until server opens FIFO for writing
-  # When server closes fd (crash/shutdown), cat gets EOF, Claude exits
-  cat "$FIFO" | ~/.local/bin/claude -p \
+  # Pipe FIFO data to Claude. When server closes fd, cat gets EOF, Claude exits.
+  cat <&3 | ~/.local/bin/claude -p \
     --input-format stream-json \
     --output-format stream-json \
     --dangerously-skip-permissions \
@@ -70,6 +83,7 @@ while true; do
     --model "$MODEL" \
     $RESUME_FLAG \
     >> "$OUT" 2>>"$ERR"
+  exec 3<&-
 
   EXIT_CODE=$?
   echo "[wrapper] Claude exited (code=$EXIT_CODE), waiting for reconnection..." >> "$ERR"

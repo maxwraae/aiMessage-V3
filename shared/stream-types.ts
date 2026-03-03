@@ -1,3 +1,9 @@
+export interface ImageAttachment {
+  base64: string;
+  mediaType: string;
+  filename?: string;
+}
+
 export type StreamItem =
   | { kind: "user_message"; text: string; id: string; timestamp: string }
   | { kind: "assistant_message"; text: string; id: string; timestamp: string }
@@ -18,4 +24,4 @@ export type ChatWsServerMessage =
   | { type: "plan_mode_entered" };
 
 export type ChatWsClientMessage =
-  | { type: "user_input"; text: string };
+  | { type: "user_input"; text: string; images?: ImageAttachment[] };

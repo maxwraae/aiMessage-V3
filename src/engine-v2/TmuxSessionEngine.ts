@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { JournalManager, SessionMetadata, InputEntry } from './JournalManager.js';
+import { ImageAttachment } from '../../shared/stream-types.js';
 import { MuxManager } from './MuxManager.js';
 import * as fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
@@ -88,14 +89,15 @@ export class TmuxSessionEngine extends EventEmitter {
    * Submits user input. Writes to in.jsonl for persistence and triggers
    * FIFO delivery to the Claude process.
    */
-  async submit(sessionId: string, clientId: string, text: string): Promise<void> {
+  async submit(sessionId: string, clientId: string, text: string, images?: ImageAttachment[]): Promise<void> {
     const journal = await this.getJournal(sessionId);
 
     const entry = await journal.appendInput({
       id: crypto.randomBytes(4).toString('hex'),
       clientId,
       type: 'user',
-      text
+      text,
+      ...(images && images.length > 0 ? { images } : {})
     });
 
     // Write user_message to out.jsonl so the UI shows it immediately
@@ -632,9 +634,32 @@ export class TmuxSessionEngine extends EventEmitter {
 
       // Construct Claude JSON streaming input
       const claudeSessionId = meta?.claudeSessionId;
+
+      // Build content: if images are attached, use a content block array;
+      // otherwise fall back to a plain text string for backwards compatibility.
+      let content: string | Array<Record<string, unknown>>;
+      if (next.images && next.images.length > 0) {
+        const blocks: Array<Record<string, unknown>> = [
+          { type: 'text', text: next.text }
+        ];
+        for (const img of next.images) {
+          blocks.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: img.mediaType,
+              data: img.base64
+            }
+          });
+        }
+        content = blocks;
+      } else {
+        content = next.text;
+      }
+
       const payload = JSON.stringify({
         type: 'user',
-        message: { role: 'user', content: next.text },
+        message: { role: 'user', content },
         session_id: claudeSessionId || 'default',
         parent_tool_use_id: null
       }) + '\n';

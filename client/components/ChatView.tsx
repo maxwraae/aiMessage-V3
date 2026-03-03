@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { StreamItem, ChatWsServerMessage, ChatWsClientMessage } from "../types/stream";
+import type { StreamItem, ChatWsServerMessage, ChatWsClientMessage, ImageAttachment } from "../types/stream";
 
 type ContextClearMarker = { kind: "context_clear"; id: string; timestamp: string };
 type PlanModeMarker = { kind: "plan_mode"; id: string; timestamp: string };
@@ -17,6 +17,8 @@ type MessageGroup =
     }
   | { kind: "context_clear"; id: string; timestamp: string }
   | { kind: "plan_mode"; id: string; timestamp: string };
+
+type PendingImage = ImageAttachment & { preview: string };
 
 function groupMessages(items: DisplayItem[]): MessageGroup[] {
   const groups: MessageGroup[] = [];
@@ -82,8 +84,8 @@ function ToolCallItem({ item }: { item: Extract<StreamItem, { kind: "tool_call" 
               {item.status === "running" ? "running..." : item.status === "completed" ? "done" : "failed"}
             </span>
           </div>
-          <svg 
-            width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+          <svg
+            width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
             className={`text-gray-300 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
           >
             <path d="m9 18 6-6-6-6"/>
@@ -142,7 +144,7 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
           <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Agent</div>
         )}
         <div className="w-full max-w-full overflow-x-hidden">
-          <ReactMarkdown 
+          <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             className="text-[17px] leading-relaxed text-gray-900 font-sans antialiased"
             components={{
@@ -180,12 +182,18 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
   const [status, setStatus] = useState<AgentStatus>("connecting");
   const [input, setInput] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
-  
+  const [debugMode, setDebugMode] = useState<boolean>(() => {
+    try { return localStorage.getItem("aimessage-debug-mode") === "true"; } catch { return false; }
+  });
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const wsRef = useRef<WebSocket | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const isAtBottom = useRef(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Text buffering for phrase-cluster streaming
   const textBufferRef = useRef<string>("");
@@ -196,6 +204,22 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Persist debug mode and handle Cmd+Shift+D toggle
+  useEffect(() => {
+    try { localStorage.setItem("aimessage-debug-mode", String(debugMode)); } catch { /* ignore */ }
+  }, [debugMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey && e.shiftKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        setDebugMode(prev => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const addLog = (msg: string) => {
     setLogs(prev => [...prev.slice(-3), `${new Date().toLocaleTimeString()}: ${msg}`]);
@@ -256,10 +280,10 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
   }, []);
 
   useEffect(() => { adjustHeight(); }, [input, adjustHeight]);
-  
-  useEffect(() => { 
+
+  useEffect(() => {
     if (isAtBottom.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" }); 
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [items]);
 
@@ -424,17 +448,98 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
     await fetch(`/api/agents/${agentId}`, { method: "DELETE" }).catch(() => {});
   }, [agentId]);
 
+  // Upload a File object to /api/upload and return a PendingImage
+  const uploadFile = useCallback(async (file: File): Promise<PendingImage | null> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      const { base64, mediaType, filename } = await res.json() as { base64: string; mediaType: string; filename: string };
+      const preview = `data:${mediaType};base64,${base64}`;
+      return { base64, mediaType, filename, preview };
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      return null;
+    }
+  }, []);
+
+  // Handle files selected via the hidden file input
+  const handleFilesSelected = useCallback(async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const uploads = await Promise.all(fileArray.map(uploadFile));
+    const valid = uploads.filter((u): u is PendingImage => u !== null);
+    if (valid.length > 0) {
+      setPendingImages(prev => [...prev, ...valid]);
+    }
+    // Reset the file input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [uploadFile]);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFilesSelected(e.target.files);
+    }
+  }, [handleFilesSelected]);
+
+  // Handle paste events on the textarea
+  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = e.clipboardData.files;
+    if (!files || files.length === 0) return;
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
+    if (imageFiles.length === 0) return;
+    e.preventDefault();
+    handleFilesSelected(imageFiles);
+  }, [handleFilesSelected]);
+
+  // Drag-and-drop handlers on the whole chat area
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only clear if leaving the outermost container
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
+    if (imageFiles.length > 0) {
+      handleFilesSelected(imageFiles);
+    }
+  }, [handleFilesSelected]);
+
+  const removePendingImage = useCallback((index: number) => {
+    setPendingImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   const send = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const text = input.trim();
-    if (!text || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+    const hasImages = pendingImages.length > 0;
+
+    // Allow sending with just images, but require at least text or images
+    if ((!text && !hasImages) || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       addLog("SEND BLOCKED");
       return;
     }
 
     addLog("SENDING...");
-    wsRef.current.send(JSON.stringify({ type: "user_input", text }));
+    const msg: ChatWsClientMessage = {
+      type: "user_input",
+      text,
+      ...(hasImages ? { images: pendingImages.map(({ base64, mediaType, filename }) => ({ base64, mediaType, filename })) } : {})
+    };
+    wsRef.current.send(JSON.stringify(msg));
     setInput("");
+    setPendingImages([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     isAtBottom.current = true; // Force scroll to bottom on send
   };
@@ -449,22 +554,51 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
   const messageGroups = groupMessages(items);
 
   return (
-    <div className="flex flex-col h-full bg-white relative overflow-hidden">
-      {/* Internal Log Overlay (Diagnostic Eyes) */}
-      <div className="absolute top-20 right-4 w-64 max-h-48 overflow-y-auto bg-black/80 backdrop-blur text-[10px] text-green-400 p-2 rounded-lg z-50 pointer-events-none font-mono shadow-2xl border border-white/10">
-        <div className="text-white border-b border-white/20 pb-1 mb-1 font-bold">SYSTEM LOG ({status})</div>
-        {logs.map((log, i) => (
-          <div key={i} className="mb-0.5 opacity-80 leading-tight">
-            {log}
+    <div
+      className={`flex flex-col h-full bg-white relative overflow-hidden transition-all ${isDragOver ? "ring-2 ring-inset ring-[#007AFF]/40 bg-[#007AFF]/[0.02]" : ""}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag-over overlay hint */}
+      {isDragOver && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <div className="bg-white/90 backdrop-blur-sm border border-[#007AFF]/30 rounded-2xl px-8 py-5 shadow-lg">
+            <p className="text-[#007AFF] text-[15px] font-medium">Drop image to attach</p>
           </div>
-        ))}
-        {items.length === 0 && <div className="text-amber-400 italic">No messages in buffer</div>}
-        {items.length > 0 && <div className="text-blue-400">{items.length} frames received</div>}
-      </div>
+        </div>
+      )}
+
+      {/* Debug toggle button — subtle, always visible */}
+      <button
+        onClick={() => setDebugMode(prev => !prev)}
+        title={debugMode ? "Hide system log (⌘⇧D)" : "Show system log (⌘⇧D)"}
+        className={`absolute top-3 right-3 w-6 h-6 rounded-md flex items-center justify-center z-50 transition-colors ${debugMode ? "bg-green-500/20 text-green-600" : "text-gray-200 hover:text-gray-400"}`}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <path d="M12 17h.01"/>
+        </svg>
+      </button>
+
+      {/* Internal Log Overlay (Diagnostic Eyes) — only shown in debug mode */}
+      {debugMode && (
+        <div className="absolute top-20 right-4 w-64 max-h-48 overflow-y-auto bg-black/80 backdrop-blur text-[10px] text-green-400 p-2 rounded-lg z-50 pointer-events-none font-mono shadow-2xl border border-white/10">
+          <div className="text-white border-b border-white/20 pb-1 mb-1 font-bold">SYSTEM LOG ({status})</div>
+          {logs.map((log, i) => (
+            <div key={i} className="mb-0.5 opacity-80 leading-tight">
+              {log}
+            </div>
+          ))}
+          {items.length === 0 && <div className="text-amber-400 italic">No messages in buffer</div>}
+          {items.length > 0 && <div className="text-blue-400">{items.length} frames received</div>}
+        </div>
+      )}
 
 
       {/* Messages */}
-      <div 
+      <div
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-10 py-6 space-y-4 touch-pan-y overscroll-contain"
@@ -509,23 +643,73 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
         <div ref={bottomRef} />
       </div>
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp"
+        multiple
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
+
       {/* Input Form - Directly in the flow */}
       <form
         onSubmit={send}
         className="bg-white border-t border-black/[0.03]"
       >
+        {/* Pending image thumbnails strip */}
+        {pendingImages.length > 0 && (
+          <div className="max-w-3xl mx-auto px-4 pt-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {pendingImages.map((img, idx) => (
+                <div key={idx} className="relative group/thumb flex-shrink-0">
+                  <img
+                    src={img.preview}
+                    alt={img.filename || `Image ${idx + 1}`}
+                    className="w-12 h-12 object-cover rounded-lg border border-black/[0.06] shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePendingImage(idx)}
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gray-600/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-gray-800"
+                    title="Remove image"
+                  >
+                    <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M1 1l10 10M11 1L1 11"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="max-w-3xl mx-auto px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] flex items-end gap-2">
+        {/* Attachment button — left of input */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          title="Attach image"
+          className="w-10 h-10 rounded-full border border-gray-200 text-gray-400 flex items-center justify-center flex-shrink-0 hover:text-[#007AFF] hover:border-[#007AFF]/40 active:scale-90 transition-all"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+        </button>
+
         <div className="flex-1 relative flex items-end">
-          <textarea 
+          <textarea
             ref={textareaRef}
             rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isTranscribing ? "Transcribing..." : "iMessage"} 
+            onPaste={handlePaste}
+            placeholder={isTranscribing ? "Transcribing..." : "iMessage"}
             className="flex-1 min-h-[40px] max-h-[150px] bg-white border border-gray-200 rounded-[20px] pl-4 pr-10 py-2 text-[17px] outline-none resize-none focus:border-[#007AFF] transition-colors [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           />
-          {!input.trim() && (
+          {!input.trim() && pendingImages.length === 0 && (
             <button
               type="button"
               onClick={startRecording}
@@ -541,7 +725,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
             </button>
           )}
         </div>
-        
+
         {status === "thinking" ? (
           <button
             type="button"
@@ -553,7 +737,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
               <rect x="0" y="0" width="12" height="12" rx="2"/>
             </svg>
           </button>
-        ) : input.trim() ? (
+        ) : (input.trim() || pendingImages.length > 0) ? (
           <button
             type="submit"
             className="w-10 h-10 rounded-full bg-[#007AFF] text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
