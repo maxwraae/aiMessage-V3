@@ -20,6 +20,36 @@ type MessageGroup =
 
 type PendingImage = ImageAttachment & { preview: string };
 
+const TRACE_TOOLS = new Set([
+  "Read", "Glob", "Grep", "ToolSearch", "TaskOutput",
+  "WebSearch", "WebFetch", "ListMcpResourcesTool", "ReadMcpResourceTool",
+  "TaskList", "TaskGet", "WebSearch"
+]);
+
+const DESTRUCTIVE_BASH_PATTERNS = [
+  /\brm\b/, /\bmv\b/, /\bgit\s+push\b/, /\bgit\s+reset\b/,
+  /\bchmod\b/, /\bnpm\s+publish\b/, /\bdocker\b/, /\bkill\b/,
+  />>?/, /\btee\b/
+];
+
+function classifyTool(name: string, input: unknown): "trace" | "promoted" {
+  if (["Edit", "Write", "NotebookEdit"].includes(name)) return "promoted";
+  if (name === "Agent" || name === "TaskCreate" || name === "TaskUpdate") return "promoted";
+  if (TRACE_TOOLS.has(name)) return "trace";
+  if (name === "Bash") {
+    const cmd = typeof input === "object" && input !== null && "command" in input
+      ? String((input as any).command)
+      : "";
+    if (DESTRUCTIVE_BASH_PATTERNS.some(p => p.test(cmd))) return "promoted";
+    return "trace";
+  }
+  // MCP tools that create/send/delete are promoted
+  if (/^mcp__/.test(name) && /(create|send|delete|update|modify|manage|write|set|remove)/.test(name)) {
+    return "promoted";
+  }
+  return "trace";
+}
+
 function groupMessages(items: DisplayItem[]): MessageGroup[] {
   const groups: MessageGroup[] = [];
   let currentGroup: Extract<MessageGroup, { items: StreamItem[] }> | null = null;
@@ -48,7 +78,7 @@ function groupMessages(items: DisplayItem[]): MessageGroup[] {
 
     const canGroup = currentGroup &&
       currentGroup.kind === kind &&
-      (kind === "user" || kind === "agent");
+      (kind === "user" || kind === "agent" || kind === "tool");
 
     if (canGroup) {
       currentGroup!.items.push(item as StreamItem);
@@ -65,71 +95,156 @@ function groupMessages(items: DisplayItem[]): MessageGroup[] {
   return groups;
 }
 
-function ToolCallItem({ item }: { item: Extract<StreamItem, { kind: "tool_call" }> }) {
+function TraceToolLine({ items }: { items: Extract<StreamItem, { kind: "tool_call" }>[] }) {
   const [expanded, setExpanded] = useState(false);
+  const running = items.filter(i => i.status === "running");
+  const isRunning = running.length > 0;
+
+  // Group by tool type for summary
+  const counts: Record<string, number> = {};
+  for (const item of items) {
+    const label = item.name === "Bash" ? "bash" : item.name === "Read" ? "read" : item.name === "Grep" ? "search" : item.name === "Glob" ? "glob" : item.name === "WebSearch" ? "search" : item.name === "WebFetch" ? "fetch" : item.name.toLowerCase();
+    counts[label] = (counts[label] || 0) + 1;
+  }
+  const summary = Object.entries(counts).map(([k, v]) => `${v} ${v === 1 ? k : k + "s"}`).join(" · ");
 
   return (
-    <div className="w-full my-2">
-      <div className="bg-gray-50/50 border border-black/[0.03] rounded-lg overflow-hidden shadow-sm">
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center justify-between px-3 py-2 hover:bg-black/[0.02] transition-colors group/tool text-left"
+    <div className="w-full">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-0 h-6 group/trace"
+      >
+        <div className="flex-1 h-px bg-black/[0.04]" />
+        <span className={`px-3 text-[11px] font-medium text-gray-300 lowercase tracking-wide whitespace-nowrap ${isRunning ? "animate-pulse" : ""}`}>
+          {isRunning ? `${running[0].name.toLowerCase()}... (${items.indexOf(running[0]) + 1} of ${items.length})` : summary}
+        </span>
+        <div className="flex-1 h-px bg-black/[0.04]" />
+      </button>
+      {expanded && (
+        <div className="mt-1 rounded-lg border border-black/[0.04] overflow-hidden">
+          {items.map((item, i) => (
+            <div key={item.id || i} className="flex items-center gap-3 px-3 py-1 text-[11px] border-b border-black/[0.02] last:border-b-0">
+              <span className="text-gray-400 font-medium w-12 flex-shrink-0">{item.name}</span>
+              <span className="text-gray-300 truncate flex-1 font-mono">
+                {item.name === "Read" && typeof item.input === "object" && item.input !== null && "file_path" in item.input
+                  ? String((item.input as any).file_path).split("/").pop()
+                  : item.name === "Grep" && typeof item.input === "object" && item.input !== null && "pattern" in item.input
+                  ? `"${(item.input as any).pattern}"`
+                  : item.name === "Glob" && typeof item.input === "object" && item.input !== null && "pattern" in item.input
+                  ? (item.input as any).pattern
+                  : ""}
+              </span>
+              <span className={`text-[10px] flex-shrink-0 ${item.status === "running" ? "text-amber-400" : item.status === "failed" ? "text-red-400" : "text-gray-300"}`}>
+                {item.status === "running" ? "..." : item.status === "failed" ? "failed" : "done"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PromotedToolCard({ item }: { item: Extract<StreamItem, { kind: "tool_call" }> }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Determine accent color
+  const isDestructive = item.name === "Bash" && typeof item.input === "object" && item.input !== null && "command" in item.input &&
+    DESTRUCTIVE_BASH_PATTERNS.some(p => p.test(String((item.input as any).command)));
+  const isAgent = item.name === "Agent" || item.name === "TaskCreate" || item.name === "TaskUpdate";
+  const accentColor = isDestructive ? "border-l-red-400" : isAgent ? "border-l-blue-400" : "border-l-amber-400";
+
+  // Build summary text
+  let summary = item.name.replace(/_/g, " ");
+  if (item.name === "Edit" && typeof item.input === "object" && item.input !== null && "file_path" in item.input) {
+    const file = String((item.input as any).file_path).split("/").pop();
+    summary = `Edited ${file}`;
+  } else if (item.name === "Write" && typeof item.input === "object" && item.input !== null && "file_path" in item.input) {
+    const file = String((item.input as any).file_path).split("/").pop();
+    summary = `Wrote ${file}`;
+  } else if (item.name === "Bash" && typeof item.input === "object" && item.input !== null && "command" in item.input) {
+    const cmd = String((item.input as any).command);
+    summary = cmd.length > 60 ? cmd.substring(0, 57) + "..." : cmd;
+  } else if (item.name === "Agent" && typeof item.input === "object" && item.input !== null && "description" in item.input) {
+    summary = `Agent: ${(item.input as any).description}`;
+  }
+
+  return (
+    <div className="w-full">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className={`w-full flex items-center bg-gray-50/50 rounded-lg border-l-2 ${accentColor} h-8 px-3 hover:bg-gray-50 transition-colors group/promoted text-left`}
+      >
+        <span className={`text-[13px] font-medium text-gray-600 flex-1 truncate ${item.status === "running" ? "animate-pulse" : ""}`}>
+          {summary}
+        </span>
+        <svg
+          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
+          className={`text-gray-300 transition-transform duration-200 flex-shrink-0 ml-2 ${expanded ? "rotate-90" : ""}`}
         >
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-              {item.name.replace(/_/g, ' ')}
-            </span>
-            <span className="text-[10px] text-gray-400 font-medium lowercase">
-              {item.status === "running" ? "running..." : item.status === "completed" ? "done" : "failed"}
-            </span>
-          </div>
-          <svg
-            width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
-            className={`text-gray-300 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
-          >
-            <path d="m9 18 6-6-6-6"/>
-          </svg>
-        </button>
-        {expanded && (
-          <div className="px-3 pb-3 space-y-2 pt-1 border-t border-black/[0.02]">
-            <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Input</div>
-            <pre className="text-[11px] text-gray-600 font-mono bg-white/50 p-2 rounded border border-black/[0.01] overflow-x-auto">
-              {JSON.stringify(item.input, null, 2)}
-            </pre>
-            {item.result !== undefined && (
-              <>
-                <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-2">Result</div>
-                <pre className="text-[11px] text-gray-600 font-mono bg-white/50 p-2 rounded border border-black/[0.01] overflow-x-auto max-h-40">
-                  {typeof item.result === "string" ? item.result : JSON.stringify(item.result, null, 2)}
-                </pre>
-              </>
-            )}
-          </div>
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
+      {expanded && (
+        <div className="mt-1 px-3 pb-2 space-y-2">
+          <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Input</div>
+          <pre className="text-[11px] text-gray-600 font-mono bg-gray-50 p-2 rounded border border-black/[0.02] overflow-x-auto">
+            {JSON.stringify(item.input, null, 2)}
+          </pre>
+          {item.result !== undefined && (
+            <>
+              <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-2">Result</div>
+              <pre className="text-[11px] text-gray-600 font-mono bg-gray-50 p-2 rounded border border-black/[0.02] overflow-x-auto max-h-40 overflow-y-auto">
+                {typeof item.result === "string" ? item.result : JSON.stringify(item.result, null, 2)}
+              </pre>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CodeBlock({ language, children }: { language: string; children: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(children);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div className="relative bg-gray-50 rounded-lg border border-black/[0.04] my-3 group/code">
+      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+        {language && (
+          <span className="text-[11px] text-gray-400 lowercase">{language}</span>
         )}
+        {!language && <span />}
+        <button
+          onClick={handleCopy}
+          className="text-[11px] text-gray-300 hover:text-gray-500 opacity-0 group-hover/code:opacity-100 transition-opacity"
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
       </div>
+      <pre className="px-3 pb-3 overflow-x-auto max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <code className="text-[13px] leading-[1.5] font-mono text-gray-800">{children}</code>
+      </pre>
     </div>
   );
 }
 
 function MessageBubble({ item, group, index, total }: { item: StreamItem; group: Extract<MessageGroup, { items: StreamItem[] }>; index: number; total: number }) {
-  if (item.kind === "tool_call") {
-    return <ToolCallItem item={item} />;
-  }
-
   if (group.kind === "user") {
     const text = (item as any).text || "";
-    let radiusClass = "bubble-user-single bubble-tail";
-    if (total > 1) {
-      if (index === 0) radiusClass = "bubble-user-top";
-      else if (index === total - 1) radiusClass = "bubble-user-bottom bubble-tail";
-      else radiusClass = "bubble-user-middle";
-    }
 
     return (
-      <div className="flex justify-end mb-1">
-        <div className={`glass-bubble-user text-white px-4 py-2 shadow-sm ${radiusClass} max-w-[85%] lg:max-w-[75%]`}>
-          <p className="text-[17px] leading-snug whitespace-pre-wrap break-words font-sans antialiased">{text}</p>
+      <div className="flex justify-start">
+        <div className="bg-gray-100 rounded-lg px-4 py-2 max-w-2xl">
+          <p className="text-[15px] leading-[1.5] text-gray-900 font-normal whitespace-pre-wrap break-words font-sans antialiased">{text}</p>
         </div>
       </div>
     );
@@ -139,20 +254,35 @@ function MessageBubble({ item, group, index, total }: { item: StreamItem; group:
     const text = (item as any).text || "";
 
     return (
-      <div className="flex flex-col mb-4 items-start w-full">
-        {index === 0 && (
-          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Agent</div>
-        )}
+      <div className="flex flex-col items-start w-full">
         <div className="w-full max-w-full overflow-x-hidden">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
-            className="text-[17px] leading-relaxed text-gray-900 font-sans antialiased"
+            className="text-[15px] leading-[1.7] text-gray-900 font-sans antialiased max-w-2xl"
             components={{
               p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
               ul: ({children}) => <ul className="list-disc pl-6 mb-3">{children}</ul>,
               ol: ({children}) => <ol className="list-decimal pl-6 mb-3">{children}</ol>,
               li: ({children}) => <li className="mb-1">{children}</li>,
-              code: ({node, ...props}) => <code className="bg-gray-100 px-1 rounded text-[15px] font-mono" {...props} />,
+              pre: ({children}) => {
+                const child = children as any;
+                if (child?.type === 'code') {
+                  const className = child.props?.className || '';
+                  const lang = className.replace(/^language-/, '');
+                  const text = typeof child.props?.children === 'string'
+                    ? child.props.children
+                    : Array.isArray(child.props?.children)
+                      ? child.props.children.map(String).join('')
+                      : String(child.props?.children || '');
+                  return <CodeBlock language={lang}>{text}</CodeBlock>;
+                }
+                return <pre>{children}</pre>;
+              },
+              code: ({node, className, children, ...props}) => {
+                // If inside a pre block, ReactMarkdown handles it via the pre component above
+                // This only handles inline code
+                return <code className="bg-gray-100 px-1 rounded text-[13px] leading-[1.4] text-gray-800 font-mono" {...props}>{children}</code>;
+              },
               strong: ({children}) => <span className="font-bold text-black">{children}</span>
             }}
           >
@@ -555,7 +685,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
 
   return (
     <div
-      className={`flex flex-col h-full bg-white relative overflow-hidden transition-all ${isDragOver ? "ring-2 ring-inset ring-[#007AFF]/40 bg-[#007AFF]/[0.02]" : ""}`}
+      className={`flex flex-col h-full relative overflow-hidden transition-all ${status === "thinking" ? "thinking-canvas" : "idle-canvas"} ${isDragOver ? "ring-2 ring-inset ring-[#007AFF]/40 bg-[#007AFF]/[0.02]" : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -601,12 +731,35 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-10 py-6 space-y-4 touch-pan-y overscroll-contain"
+        className="flex-1 overflow-y-auto px-10 py-6 pb-32 touch-pan-y overscroll-contain"
       >
         {messageGroups.map((group, gIdx) => {
+          // Calculate vertical spacing based on group transitions
+          const prevGroup = gIdx > 0 ? messageGroups[gIdx - 1] : null;
+          let topMargin = "";
+          if (prevGroup) {
+            const prevKind = prevGroup.kind;
+            const currKind = group.kind;
+            if (prevKind === "context_clear" || prevKind === "plan_mode" || prevKind === "notification") {
+              topMargin = ""; // these have their own padding
+            } else if (prevKind === currKind && (currKind === "user" || currKind === "agent")) {
+              topMargin = "mt-1"; // same sender consecutive: 4px
+            } else if ((prevKind === "user" && currKind === "agent") || (prevKind === "agent" && currKind === "user")) {
+              topMargin = "mt-6"; // sender switch: 24px
+            } else if ((prevKind === "agent" && currKind === "tool") || (prevKind === "tool" && currKind === "agent")) {
+              topMargin = "mt-2"; // agent ↔ tool: 8px
+            } else if (prevKind === "user" && currKind === "tool") {
+              topMargin = "mt-4"; // user → tool: 16px
+            } else if (prevKind === "tool" && currKind === "user") {
+              topMargin = "mt-6"; // tool → user: 24px
+            } else {
+              topMargin = "mt-4"; // default fallback: 16px
+            }
+          }
+
           if (group.kind === "context_clear") {
             return (
-              <div key={group.id} className="flex items-center gap-3 py-4 px-2">
+              <div key={group.id} className={`flex items-center gap-3 py-4 px-2 ${topMargin}`}>
                 <div className="h-px flex-1 bg-black/10" />
                 <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap tracking-wide">Context cleared</span>
                 <div className="h-px flex-1 bg-black/10" />
@@ -615,7 +768,7 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
           }
           if (group.kind === "plan_mode") {
             return (
-              <div key={group.id} className="flex items-center gap-3 py-4 px-2">
+              <div key={group.id} className={`flex items-center gap-3 py-4 px-2 ${topMargin}`}>
                 <div className="h-px flex-1 bg-amber-300/40" />
                 <span className="text-[11px] text-amber-600/70 font-medium whitespace-nowrap tracking-wide">Plan mode</span>
                 <div className="h-px flex-1 bg-amber-300/40" />
@@ -625,15 +778,29 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
           if (group.kind === "notification") {
             const notifItem = group.items[0] as Extract<StreamItem, { kind: "notification" }>;
             return (
-              <div key={gIdx} className="flex items-center justify-center gap-3 py-3 px-8">
+              <div key={gIdx} className={`flex items-center justify-center gap-3 py-3 px-8 ${topMargin}`}>
                 <div className="h-px flex-1 bg-[#007AFF]/20" />
                 <span className="text-[12px] text-[#007AFF] font-medium whitespace-nowrap">{notifItem.subject}</span>
                 <div className="h-px flex-1 bg-[#007AFF]/20" />
               </div>
             );
           }
+          if (group.kind === "tool") {
+            const toolItems = group.items as Extract<StreamItem, { kind: "tool_call" }>[];
+            const traceItems = toolItems.filter(i => classifyTool(i.name, i.input) === "trace");
+            const promotedItems = toolItems.filter(i => classifyTool(i.name, i.input) === "promoted");
+
+            return (
+              <div key={gIdx} className={`space-y-2 ${topMargin}`}>
+                {traceItems.length > 0 && <TraceToolLine items={traceItems} />}
+                {promotedItems.map((item, iIdx) => (
+                  <PromotedToolCard key={item.id || iIdx} item={item} />
+                ))}
+              </div>
+            );
+          }
           return (
-            <div key={gIdx} className="space-y-1">
+            <div key={gIdx} className={topMargin}>
               {group.items.map((item, iIdx) => (
                 <MessageBubble key={iIdx} item={item} group={group as Extract<MessageGroup, { items: StreamItem[] }>} index={iIdx} total={group.items.length} />
               ))}
@@ -653,98 +820,105 @@ export default function ChatView({ agentId, onTitleUpdate, onUnreadReset, onStat
         onChange={handleFileInputChange}
       />
 
-      {/* Input Form - Directly in the flow */}
+      {/* Input Form - Glass container floating over content */}
       <form
         onSubmit={send}
-        className="bg-white border-t border-black/[0.03]"
+        className="absolute bottom-0 left-0 right-0 z-10"
       >
-        {/* Pending image thumbnails strip */}
-        {pendingImages.length > 0 && (
-          <div className="max-w-3xl mx-auto px-4 pt-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              {pendingImages.map((img, idx) => (
-                <div key={idx} className="relative group/thumb flex-shrink-0">
-                  <img
-                    src={img.preview}
-                    alt={img.filename || `Image ${idx + 1}`}
-                    className="w-12 h-12 object-cover rounded-lg border border-black/[0.06] shadow-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePendingImage(idx)}
-                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gray-600/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-gray-800"
-                    title="Remove image"
-                  >
-                    <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <path d="M1 1l10 10M11 1L1 11"/>
-                    </svg>
-                  </button>
+        <div className="max-w-3xl mx-auto px-4 mb-3">
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.06)] p-3">
+            {/* Pending image thumbnails strip */}
+            {pendingImages.length > 0 && (
+              <div className="mb-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {pendingImages.map((img, idx) => (
+                    <div key={idx} className="relative group/thumb flex-shrink-0">
+                      <img
+                        src={img.preview}
+                        alt={img.filename || `Image ${idx + 1}`}
+                        className="w-12 h-12 object-cover rounded-lg border border-black/[0.06] shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePendingImage(idx)}
+                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gray-600/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-gray-800"
+                        title="Remove image"
+                      >
+                        <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <path d="M1 1l10 10M11 1L1 11"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Textarea */}
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
+              placeholder={isTranscribing ? "Transcribing..." : "Message"}
+              className="w-full min-h-[36px] max-h-[150px] bg-transparent border-none pl-1 pr-1 py-1 text-[15px] outline-none resize-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            />
+
+            {/* Action pills row */}
+            <div className="flex items-center gap-2 mt-1">
+              {/* Attach button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach image"
+                className="w-8 h-8 rounded-full bg-gray-100/60 text-gray-400 flex items-center justify-center flex-shrink-0 hover:text-[#007AFF] hover:bg-gray-100 active:scale-90 transition-all"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </button>
+
+              {/* Mic button */}
+              <button
+                type="button"
+                onClick={startRecording}
+                disabled={isTranscribing}
+                className={`w-8 h-8 rounded-full bg-gray-100/60 flex items-center justify-center flex-shrink-0 active:scale-90 transition-all ${isRecording ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isRecording ? 'animate-pulse' : ''}>
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <path d="M12 19v4"/>
+                  <path d="M8 23h8"/>
+                </svg>
+              </button>
+
+              <div className="flex-1" />
+
+              {/* Send / Stop button */}
+              {status === "thinking" ? (
+                <button
+                  type="button"
+                  onClick={stopGeneration}
+                  title="Stop generating"
+                  className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition-all hover:bg-red-600 shadow-sm shadow-red-500/30"
+                >
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
+                    <rect x="0" y="0" width="12" height="12" rx="2"/>
+                  </svg>
+                </button>
+              ) : (input.trim() || pendingImages.length > 0) ? (
+                <button
+                  type="submit"
+                  className="w-8 h-8 rounded-full bg-[#007AFF] text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                </button>
+              ) : null}
             </div>
           </div>
-        )}
-
-        <div className="max-w-3xl mx-auto px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] flex items-end gap-2">
-        {/* Attachment button — left of input */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          title="Attach image"
-          className="w-10 h-10 rounded-full border border-gray-200 text-gray-400 flex items-center justify-center flex-shrink-0 hover:text-[#007AFF] hover:border-[#007AFF]/40 active:scale-90 transition-all"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-          </svg>
-        </button>
-
-        <div className="flex-1 relative flex items-end">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            placeholder={isTranscribing ? "Transcribing..." : "iMessage"}
-            className="flex-1 min-h-[40px] max-h-[150px] bg-white border border-gray-200 rounded-[20px] pl-4 pr-10 py-2 text-[17px] outline-none resize-none focus:border-[#007AFF] transition-colors [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          />
-          {!input.trim() && pendingImages.length === 0 && (
-            <button
-              type="button"
-              onClick={startRecording}
-              disabled={isTranscribing}
-              className={`absolute right-2 bottom-1.5 w-7 h-7 flex items-center justify-center cursor-pointer transition-colors ${isRecording ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isRecording ? 'animate-pulse' : ''}>
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <path d="M12 19v4"/>
-                <path d="M8 23h8"/>
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {status === "thinking" ? (
-          <button
-            type="button"
-            onClick={stopGeneration}
-            title="Stop generating"
-            className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition-all hover:bg-red-600 shadow-sm shadow-red-500/30"
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-              <rect x="0" y="0" width="12" height="12" rx="2"/>
-            </svg>
-          </button>
-        ) : (input.trim() || pendingImages.length > 0) ? (
-          <button
-            type="submit"
-            className="w-10 h-10 rounded-full bg-[#007AFF] text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-          </button>
-        ) : null}
         </div>
       </form>
     </div>

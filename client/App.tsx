@@ -55,7 +55,7 @@ function SessionAvatar({ session, initials, liveStatus }: { session: Session; in
         hasUnread
           ? 'bg-[#007AFF] text-white shadow-sm shadow-[#007AFF]/30'
           : isThinking
-            ? `bg-blue-50 text-[#007AFF] shadow-sm breathing-glow-ring`
+            ? `bg-blue-50 text-[#007AFF] shadow-sm thinking-avatar`
             : isWarm
               ? 'bg-blue-50 text-[#007AFF] shadow-sm'
               : 'bg-gray-100/50 text-gray-400'
@@ -560,56 +560,54 @@ export default function App() {
               const isHiddenOnMobile = index !== activeAgentIds.length - 1;
               return (
                 <div key={id} className={`bg-white flex flex-col min-h-0 overflow-hidden relative group ${isHiddenOnMobile ? "hidden lg:flex" : "flex"}`}>
-                  <div className={`h-20 lg:h-14 flex-shrink-0 border-b border-black/[0.05] flex items-center px-4 justify-between pt-6 lg:pt-0 bg-white/80 backdrop-blur-md sticky top-0 z-30 ${agentStatuses[id] === "thinking" ? "breathing-glow" : "breathing-glow-fade"}`}>
+                  <div className={`h-14 lg:h-12 flex-shrink-0 flex items-center px-4 justify-between bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-[0_1px_0_rgba(0,0,0,0.04)]`}>
                     {/* Mobile back button */}
                     <button
                       onClick={goBack}
-                      className="lg:hidden flex items-center gap-1 text-[#3478F6] min-w-[70px] h-full px-4 ml-[-16px] active:opacity-50 transition-opacity"
+                      className="lg:hidden flex items-center gap-1 text-[#3478F6] min-w-[50px] h-full px-2 ml-[-8px] active:opacity-50 transition-opacity"
                     >
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <path d="m15 18-6-6 6-6"/>
                       </svg>
                     </button>
 
-                    {/* Avatar + Title — same layout as sidebar row */}
+                    {/* Avatar + Title + Model */}
                     <div className="flex items-center gap-3 flex-1 min-w-0 lg:ml-2">
-                      {/* Initials circle — same as SessionAvatar, with breathing ring */}
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold flex-shrink-0 transition-all duration-500 ${
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all duration-500 ${
                         agentStatuses[id] === "thinking"
-                          ? "bg-blue-50 text-[#007AFF] breathing-glow-ring"
+                          ? "thinking-avatar"
                           : "bg-blue-50 text-[#007AFF]"
                       }`}>
                         {(agent?.title || "?").substring(0, 2).toUpperCase()}
                       </div>
 
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[14px] font-bold text-gray-900 truncate leading-tight">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[15px] font-bold text-gray-900 truncate leading-tight">
                           {agent?.title || "Untitled Chat"}
                         </span>
-                        {/* Model picker — visible on all screen sizes */}
-                        <div className="relative flex-shrink-0">
-                          <select
-                            value={agent?.model || 'sonnet'}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              switchAgentModel(id, e.target.value);
-                            }}
-                            className="appearance-none bg-gray-100/70 hover:bg-gray-200/70 text-gray-500 hover:text-gray-700 text-[11px] font-medium rounded-full pl-2 pr-5 py-0.5 border-none outline-none cursor-pointer transition-colors capitalize"
-                            title="Switch model"
-                          >
-                            <option value="sonnet">Sonnet</option>
-                            <option value="haiku">Haiku</option>
-                            <option value="opus">Opus</option>
-                          </select>
-                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <path d="m6 9 6 6 6-6"/>
-                          </svg>
-                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const models = ["sonnet", "haiku", "opus"];
+                            const current = agent?.model || "sonnet";
+                            const next = models[(models.indexOf(current) + 1) % models.length];
+                            switchAgentModel(id, next);
+                          }}
+                          className="text-[11px] text-gray-400 hover:text-gray-600 font-medium text-left transition-colors capitalize w-fit"
+                          title="Click to switch model"
+                        >
+                          {agent?.model || "sonnet"}
+                        </button>
                       </div>
                     </div>
 
+                    {/* Right side: project name */}
+                    <span className="text-[13px] text-gray-400 font-medium truncate hidden lg:block max-w-[200px]">
+                      {selectedProject?.name || ""}
+                    </span>
+
                     {/* Action buttons — visible on hover */}
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity min-w-[44px] justify-end">
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity min-w-[44px] justify-end ml-2">
                       {agent && <button onClick={(e) => { e.stopPropagation(); killAgent(agent); }} className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
                       <button onClick={(e) => { e.stopPropagation(); removeFromStage(id); }} className="w-4 h-4 rounded-full bg-[#ffbd2e] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M5 12h14"/></svg></button>
                     </div>
