@@ -52,6 +52,41 @@ const MIME: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
+// ---------------------------------------------------------------------------
+// Upload cleanup — enforces 10 GB cap and 7-day age limit
+// ---------------------------------------------------------------------------
+function cleanupUploads(uploadsDir: string): void {
+  try {
+    const MAX_UPLOADS_BYTES = 10 * 1024 * 1024 * 1024;
+    const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    const files = readdirSync(uploadsDir)
+      .map(name => {
+        const filePath = join(uploadsDir, name);
+        const st = statSync(filePath);
+        return { name, filePath, mtime: st.mtimeMs, size: st.size };
+      })
+      .sort((a, b) => a.mtime - b.mtime); // oldest first
+
+    let total = files.reduce((sum, f) => sum + f.size, 0);
+    for (const f of files) {
+      const tooOld = now - f.mtime > MAX_AGE_MS;
+      const overQuota = total > MAX_UPLOADS_BYTES;
+      if (!tooOld && !overQuota) continue;
+      try {
+        unlinkSync(f.filePath);
+        total -= f.size;
+        console.log(`[Upload] Cleaned up ${tooOld ? "(age)" : "(quota)"}: ${f.name}`);
+      } catch (e) {
+        console.warn(`[Upload] Could not delete ${f.name}:`, e);
+      }
+    }
+  } catch (cleanupErr) {
+    console.warn("[Upload] Cleanup failed:", cleanupErr);
+  }
+}
+
 const server = createServer(async (req, res) => {
   console.log(`[Request] ${req.method} ${req.url}`);
 
@@ -161,43 +196,30 @@ const server = createServer(async (req, res) => {
 
         // Detect media type from extension
         const ext = extname(originalFilename).toLowerCase();
-        const mediaTypeMap: Record<string, string> = {
+        const imageMediaTypeMap: Record<string, string> = {
           ".png":  "image/png",
           ".jpg":  "image/jpeg",
           ".jpeg": "image/jpeg",
           ".gif":  "image/gif",
           ".webp": "image/webp",
         };
-        const mediaType = mediaTypeMap[ext];
-        if (!mediaType) throw new Error(`Unsupported file type: ${ext}`);
+        const mediaType = imageMediaTypeMap[ext];
 
-        // Read back as base64
-        const base64 = readFileSync(savedPath).toString("base64");
+        // Run cleanup after saving
+        cleanupUploads(uploadsDir);
 
-        // Cleanup: if uploads dir exceeds 10GB, delete oldest files first
-        const MAX_UPLOADS_BYTES = 10 * 1024 * 1024 * 1024;
-        try {
-          const files = readdirSync(uploadsDir)
-            .map(name => {
-              const filePath = join(uploadsDir, name);
-              const st = statSync(filePath);
-              return { name, filePath, mtime: st.mtimeMs, size: st.size };
-            })
-            .sort((a, b) => a.mtime - b.mtime); // oldest first
-
-          let total = files.reduce((sum, f) => sum + f.size, 0);
-          for (const f of files) {
-            if (total <= MAX_UPLOADS_BYTES) break;
-            unlinkSync(f.filePath);
-            total -= f.size;
-            console.log(`[Upload] Cleaned up old file: ${f.name}`);
-          }
-        } catch (cleanupErr) {
-          console.warn("[Upload] Cleanup failed:", cleanupErr);
+        let responsePayload: object;
+        if (mediaType) {
+          // Image: read back as base64 for inline display
+          const base64 = readFileSync(savedPath).toString("base64");
+          responsePayload = { type: "image", base64, mediaType, filename: originalFilename };
+        } else {
+          // Non-image: return disk path — client sends it to Claude as a file reference
+          responsePayload = { type: "file", filePath: savedPath, filename: originalFilename, fileSize: fileData.length };
         }
 
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ base64, mediaType, filename: originalFilename }));
+        res.end(JSON.stringify(responsePayload));
       } catch (err) {
         console.error("[Upload] Error:", err);
         res.writeHead(500, { "Content-Type": "application/json" });
@@ -346,7 +368,16 @@ const server = createServer(async (req, res) => {
         
         const projectPath = payload.projectPath.replace(/^~/, os.homedir());
         const sessionId = payload.resumeSessionId || crypto.randomUUID();
-        await engine.create(sessionId, projectPath, payload.model || "sonnet");
+
+        // Resolve model: explicit > stored metadata > default
+        let model = payload.model;
+        if (!model && payload.resumeSessionId) {
+          const existing = await engine.getState(sessionId);
+          model = existing?.model || "sonnet";
+        } else if (!model) {
+          model = "sonnet";
+        }
+        await engine.create(sessionId, projectPath, model);
 
         const state = await engine.getState(sessionId);
         const title = (state as any)?.title || (payload.resumeSessionId ? "Chat" : "New Chat");
@@ -377,6 +408,19 @@ const server = createServer(async (req, res) => {
       await engine.interrupt(id);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ interrupted: id }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: String(err) }));
+    }
+    return;
+  }
+
+  if (req.url?.match(/^\/api\/sessions\/([^/]+)\/hibernate$/) && req.method === "POST") {
+    const id = req.url.match(/^\/api\/sessions\/([^/]+)\/hibernate$/)![1];
+    try {
+      await engine.hibernateSession(decodeURIComponent(id));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ hibernated: id }));
     } catch (err) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: String(err) }));
@@ -496,6 +540,19 @@ agents.then(list=>{
 
 const wss = new WebSocketServer({ noServer: true });
 
+// Track all connected WebSocket clients for global broadcasts
+const allClients = new Set<import("ws").WebSocket>();
+
+// Broadcast session_renamed to all connected clients
+engine.on("chat_title_update", ({ sessionId, title }: { sessionId: string; title: string }) => {
+  const msg = JSON.stringify({ type: "session_renamed", sessionId, title });
+  for (const client of allClients) {
+    if (client.readyState === 1) {
+      client.send(msg);
+    }
+  }
+});
+
 server.on("upgrade", (req: IncomingMessage, socket, head) => {
   if (req.url?.startsWith("/ws/chat/")) {
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
@@ -506,6 +563,10 @@ server.on("upgrade", (req: IncomingMessage, socket, head) => {
 
 wss.on("connection", (ws, req: IncomingMessage) => {
   const urlPath = req.url ?? "";
+
+  // Track this client for global broadcasts
+  allClients.add(ws);
+  ws.on("close", () => allClients.delete(ws));
 
   // Chat WebSocket: /ws/chat/{sessionId}
   if (urlPath.startsWith("/ws/chat/")) {
@@ -554,8 +615,8 @@ wss.on("connection", (ws, req: IncomingMessage) => {
             ws.send(JSON.stringify({ type: "plan_mode_entered" }));
             return;
           }
-          console.log(`[WS] Queuing user_input for session ${sessionId}: "${msg.text}"${msg.images?.length ? ` (+${msg.images.length} image(s))` : ""}`);
-          engine.submit(sessionId, "ws-client", msg.text, msg.images);
+          console.log(`[WS] Queuing user_input for session ${sessionId}: "${msg.text}"${msg.images?.length ? ` (+${msg.images.length} image(s))` : ""}${msg.files?.length ? ` (+${msg.files.length} file(s))` : ""}`);
+          engine.submit(sessionId, "ws-client", msg.text, msg.images, msg.files);
         }
       } catch {
         // ignore malformed
@@ -569,6 +630,15 @@ wss.on("connection", (ws, req: IncomingMessage) => {
     return;
   }
 });
+
+// Run upload cleanup every hour
+setInterval(() => {
+  const uploadsDir = join(os.homedir(), ".aimessage", "uploads");
+  if (existsSync(uploadsDir)) {
+    console.log("[Upload] Running scheduled cleanup...");
+    cleanupUploads(uploadsDir);
+  }
+}, 60 * 60 * 1000).unref();
 
 server.listen(7777, "0.0.0.0", () => {
   console.log("aiMessage V4 (tmux engine) listening on http://0.0.0.0:7777");
