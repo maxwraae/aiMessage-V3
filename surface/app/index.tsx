@@ -4,6 +4,8 @@ import { ChatCard } from "../components/ChatCard";
 import { GlassButton, GlassPill } from "../components/Glass";
 import { NeedsYouStrip } from "../components/NeedsYouStrip";
 import type { NeedsYouItem } from "../components/NeedsYouStrip";
+import { RecentWorkStrip } from "../components/RecentWorkStrip";
+import type { ObjectiveCardData } from "../components/ObjectiveCard";
 import { mockSession } from "../constants/mockData";
 import { theme } from "../constants/theme";
 
@@ -179,6 +181,46 @@ const mockNeedsYou: NeedsYouItem[] = [
     },
     important: true,
     parents: ["Ship the app"],
+  },
+];
+
+// Mock data for the "Recent work" strip
+const mockRecentWork: ObjectiveCardData[] = [
+  {
+    id: "rw-1",
+    name: "Ship the app",
+    description: "Get the product out the door. Working app, deployed, usable by real people.",
+    lastAccessed: new Date("2026-03-07T18:00:00"),
+    status: "thinking" as const,
+    children: [
+      { name: "Nail onboarding", status: "idle" as const },
+      { name: "Set up CI/CD", status: "idle" as const },
+      { name: "Performance audit", status: "thinking" as const },
+    ],
+  },
+  {
+    id: "rw-2",
+    name: "Harvard application",
+    description: "Complete and submit the graduate school application. Essays, recommendations, portfolio.",
+    lastAccessed: new Date("2026-03-06T14:00:00"),
+    status: "needs-input" as const,
+    children: [
+      { name: "Personal statement draft", status: "needs-input" as const },
+      { name: "Get recommendation letters", status: "idle" as const },
+      { name: "Prepare portfolio", status: "thinking" as const },
+      { name: "Application fee", status: "idle" as const },
+    ],
+  },
+  {
+    id: "rw-3",
+    name: "Bactolife paper",
+    description: "Finalize the manuscript for the active fiber ETEC study. Figures, methods, submission.",
+    lastAccessed: new Date("2026-03-04T09:00:00"),
+    status: "idle" as const,
+    children: [
+      { name: "Revise discussion", status: "idle" as const },
+      { name: "Figure 3 redraw", status: "idle" as const },
+    ],
   },
 ];
 
@@ -468,6 +510,9 @@ export default function HomeScreen() {
 
           {/* Needs You strip */}
           <NeedsYouStrip items={mockNeedsYou} onNavigate={(id) => enterWorkView(id)} onExpand={enterNeedsYou} headerColor={tod.textColor} />
+
+          {/* Recent Work strip */}
+          <RecentWorkStrip items={mockRecentWork} onNavigate={(id) => enterWorkView(id)} headerColor={tod.textColor} />
         </ScrollView>
       </View>
     );
@@ -574,108 +619,74 @@ export default function HomeScreen() {
           style={styles.content}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Objective section — title + buttons left, description right */}
+          {/* Objective section — title, description, buttons stacked vertically */}
           <View style={styles.objectiveSection} ref={objectiveSectionRef}>
-            {/* Left: title + action buttons */}
-            {Platform.OS === "web" ? (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 8, paddingRight: 24, width: "50%", boxSizing: "border-box" as const } as any}
-              >
-                {objectiveEditing ? (
-                  <TextInput
-                    autoFocus
-                    value={editTitle}
-                    onChangeText={setEditTitle}
-                    multiline
-                    onKeyPress={(e: any) => {
-                      if (e.nativeEvent.key === "Escape") cancelObjectiveEdit();
-                      if (e.nativeEvent.key === "Enter") { e.preventDefault(); commitObjectiveEdit(); }
-                    }}
-                    style={[styles.objectiveTitle, {
-                      outlineStyle: "none",
-                      padding: 0,
-                      margin: 0,
-                      border: "none",
-                      background: "transparent",
-                    }] as any}
-                  />
-                ) : (
-                  <Text style={styles.objectiveTitle}>{current.name}</Text>
-                )}
-                <View style={styles.actionButtons}>
-                  <GlassButton size={30} onPress={() => resolveNode(currentName)}>
-                    <Text style={styles.actionButtonIcon}>{"\u2713"}</Text>
-                  </GlassButton>
-                  <GlassButton size={30} onPress={startObjectiveEdit}>
-                    <Text style={styles.actionButtonIcon}>{"\u270E"}</Text>
-                  </GlassButton>
-                  <GlassButton size={30} onPress={handleAddChild}>
-                    <Text style={styles.plusIcon}>+</Text>
-                  </GlassButton>
-                </View>
-              </div>
+            {objectiveEditing ? (
+              <TextInput
+                autoFocus
+                value={editTitle}
+                onChangeText={setEditTitle}
+                multiline
+                onKeyPress={(e: any) => {
+                  if (e.nativeEvent.key === "Escape") cancelObjectiveEdit();
+                  if (e.nativeEvent.key === "Enter") { e.preventDefault(); commitObjectiveEdit(); }
+                }}
+                style={[styles.objectiveTitle, Platform.OS === "web" ? {
+                  outlineStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  border: "none",
+                  background: "transparent",
+                } : null] as any}
+              />
             ) : (
-              <View style={styles.objectiveLeft}>
-                <Text style={styles.objectiveTitle}>{current.name}</Text>
-                <View style={styles.actionButtons}>
-                  <GlassButton size={30} onPress={() => resolveNode(currentName)}>
-                    <Text style={styles.actionButtonIcon}>{"\u2713"}</Text>
-                  </GlassButton>
-                  <GlassButton size={30} onPress={startObjectiveEdit}>
-                    <Text style={styles.actionButtonIcon}>{"\u270E"}</Text>
-                  </GlassButton>
-                  <GlassButton size={30} onPress={handleAddChild}>
-                    <Text style={styles.plusIcon}>+</Text>
-                  </GlassButton>
-                </View>
-              </View>
+              <Text style={styles.objectiveTitle}>{current.name}</Text>
             )}
 
-            {/* Right: description */}
-            {Platform.OS === "web" ? (
-              <div
-                style={{ display: "flex", flexDirection: "column", width: "50%", boxSizing: "border-box" as const, paddingLeft: 24 } as any}
-              >
-                {objectiveEditing ? (
-                  <TextInput
-                    ref={descInputRef}
-                    value={editDescription}
-                    onChangeText={setEditDescription}
-                    onContentSizeChange={(e: any) => {
-                      setDescHeight(Math.max(40, e.nativeEvent.contentSize.height));
-                    }}
-                    onKeyPress={(e: any) => {
-                      if (e.nativeEvent.key === "Escape") cancelObjectiveEdit();
-                      if (e.nativeEvent.key === "Enter" && !e.nativeEvent.shiftKey) {
-                        e.preventDefault();
-                        commitObjectiveEdit();
-                      }
-                    }}
-                    multiline
-                    placeholder="Add a description..."
-                    placeholderTextColor="rgba(0,0,0,0.25)"
-                    style={[styles.objectiveDescription, {
-                      outlineStyle: "none",
-                      padding: 0,
-                      margin: 0,
-                      border: "none",
-                      background: "transparent",
-                      height: descHeight,
-                    }] as any}
-                  />
-                ) : (
-                  <Text style={styles.objectiveDescription}>
-                    {current.description || "No description"}
-                  </Text>
-                )}
-              </div>
+            {objectiveEditing ? (
+              <TextInput
+                ref={descInputRef}
+                value={editDescription}
+                onChangeText={setEditDescription}
+                onContentSizeChange={(e: any) => {
+                  setDescHeight(Math.max(40, e.nativeEvent.contentSize.height));
+                }}
+                onKeyPress={(e: any) => {
+                  if (e.nativeEvent.key === "Escape") cancelObjectiveEdit();
+                  if (e.nativeEvent.key === "Enter" && !e.nativeEvent.shiftKey) {
+                    e.preventDefault();
+                    commitObjectiveEdit();
+                  }
+                }}
+                multiline
+                placeholder="Add a description..."
+                placeholderTextColor="rgba(0,0,0,0.25)"
+                style={[styles.objectiveDescription, { maxWidth: 640 }, Platform.OS === "web" ? {
+                  outlineStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  border: "none",
+                  background: "transparent",
+                  height: descHeight,
+                } : null] as any}
+              />
             ) : (
-              <View style={styles.objectiveRight}>
-                {current.description ? (
-                  <Text style={styles.objectiveDescription}>{current.description}</Text>
-                ) : null}
-              </View>
+              <Text style={[styles.objectiveDescription, { maxWidth: 640 }]}>
+                {current.description || "No description"}
+              </Text>
             )}
+
+            <View style={styles.actionButtons}>
+              <GlassButton size={38} onPress={() => resolveNode(currentName)}>
+                <Text style={styles.actionButtonIcon}>{"\u2713"}</Text>
+              </GlassButton>
+              <GlassButton size={38} onPress={startObjectiveEdit}>
+                <Text style={styles.actionButtonIcon}>{"\u270E"}</Text>
+              </GlassButton>
+              <GlassButton size={38} onPress={handleAddChild}>
+                <Text style={styles.plusIcon}>+</Text>
+              </GlassButton>
+            </View>
           </View>
 
           {/* Card grid */}
@@ -875,7 +886,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === "web" ? { overscrollBehaviorX: "none" } : {}),
   } as any,
   scrollContent: {
-    paddingTop: theme.layout.headerH + 16,
+    paddingTop: theme.layout.headerH + 48,
     maxWidth: theme.layout.gridMaxWidth,
     ...(Platform.OS === "web"
       ? { marginLeft: "auto", marginRight: "auto" }
@@ -884,38 +895,23 @@ const styles = StyleSheet.create({
 
   // ── Objective section ──
   objectiveSection: {
-    ...(Platform.OS === "web"
-      ? {
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-        }
-      : { flexDirection: "row" }),
     paddingHorizontal: theme.layout.gridPadding,
     paddingTop: 24,
-    paddingBottom: 44,
+    paddingBottom: 72,
+    gap: 16,
+    ...(Platform.OS === "web"
+      ? { maxWidth: "50%" }
+      : {}),
     minWidth: 320,
-  } as any,
-  objectiveLeft: {
-    ...(Platform.OS === "web"
-      ? { width: "50%", boxSizing: "border-box" }
-      : { flex: 1 }),
-    gap: 12,
-    paddingRight: 24,
-  } as any,
-  objectiveRight: {
-    ...(Platform.OS === "web"
-      ? { width: "50%", boxSizing: "border-box" }
-      : { flex: 1 }),
-    paddingLeft: 24,
   } as any,
   actionButtons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
+    marginTop: 4,
   },
   actionButtonIcon: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "500" as const,
     color: "rgba(0,0,0,0.40)",
     fontFamily: theme.fonts.sans,

@@ -9,8 +9,7 @@ import {
 } from "react-native";
 import { theme } from "../constants/theme";
 import { MessageList } from "./MessageList";
-import { GlassPill, GlassButton } from "./Glass";
-import { HoverTray } from "./HoverTray";
+import { GlassButton } from "./Glass";
 import type { ChatMessage, ChatSession } from "../types/chat";
 
 /** Compact waveform icon for card input */
@@ -119,67 +118,45 @@ export function ChatCard({ session, focused = false, style, onDescend, onResolve
 
   const hasText = text.trim().length > 0;
 
+  // Resolve header background tint from priority or status
+  const headerTint = priorityTint
+    ?? theme.status[session.status as keyof typeof theme.status]?.tint
+    ?? "rgba(0,0,0,0.03)";
+
+  const handleHeaderPress = () => {
+    if (editing) return;
+    if (onDescend) onDescend();
+  };
+
   return (
     <View ref={cardRef} style={[styles.container, focused ? styles.containerFocused : styles.containerUnfocused, session.status === "resolved" && { opacity: 0.45 }, !scrollEnabled && Platform.OS === "web" && { overscrollBehavior: "auto" } as any, style]}>
-      <MessageList messages={messages} scrollEnabled={scrollEnabled} />
-
-      {/* Floating header — overlays top of message list */}
-      <View
-        style={styles.headerOverlay}
+      {/* Header — entire bar is clickable */}
+      <Pressable
+        onPress={handleHeaderPress}
+        style={[styles.header, { backgroundColor: headerTint || "rgba(0,0,0,0.03)" }, Platform.OS === "web" ? { cursor: onDescend ? "pointer" : "default" } as any : undefined]}
       >
-        {onDescend ? (
-          <HoverTray actions={[{ label: 'Edit', onPress: () => setEditing(true) }]}>
-            <Pressable onPress={onDescend} style={Platform.OS === "web" ? { cursor: "pointer" } as any : undefined}>
-              <GlassPill height={44} tint={priorityTint ?? theme.status[session.status as keyof typeof theme.status]?.tint}>
-                {editing ? (
-                  <TextInput
-                    autoFocus
-                    value={editText}
-                    onChangeText={setEditText}
-                    onSubmitEditing={() => { onRename?.(editText); setEditing(false); }}
-                    onKeyPress={(e) => { if (e.nativeEvent.key === "Escape") { setEditText(session.name); setEditing(false); } }}
-                    onBlur={() => { onRename?.(editText); setEditing(false); }}
-                    style={styles.titleInput}
-                  />
-                ) : (
-                  <Text style={styles.title} numberOfLines={1}>
-                    {session.name}
-                  </Text>
-                )}
-              </GlassPill>
-            </Pressable>
-          </HoverTray>
+        {editing ? (
+          <TextInput
+            autoFocus
+            value={editText}
+            onChangeText={setEditText}
+            onSubmitEditing={() => { onRename?.(editText); setEditing(false); }}
+            onKeyPress={(e) => { if (e.nativeEvent.key === "Escape") { setEditText(session.name); setEditing(false); } }}
+            onBlur={() => { onRename?.(editText); setEditing(false); }}
+            style={styles.titleInput}
+          />
         ) : (
-          <HoverTray actions={[{ label: 'Edit', onPress: () => setEditing(true) }]}>
-            <GlassPill tint={priorityTint ?? theme.status[session.status as keyof typeof theme.status]?.tint}>
-              {editing ? (
-                <TextInput
-                  autoFocus
-                  value={editText}
-                  onChangeText={setEditText}
-                  onSubmitEditing={() => { onRename?.(editText); setEditing(false); }}
-                  onKeyPress={(e) => { if (e.nativeEvent.key === "Escape") { setEditText(session.name); setEditing(false); } }}
-                  onBlur={() => { onRename?.(editText); setEditing(false); }}
-                  style={styles.titleInput}
-                />
-              ) : (
-                <Text style={styles.title} numberOfLines={1}>
-                  {session.name}
-                </Text>
-              )}
-            </GlassPill>
-          </HoverTray>
-        )}
-        {childCount > 0 && (
-          <GlassButton size={36} onPress={onDescend} tint={priorityTint ?? theme.status[session.status as keyof typeof theme.status]?.tint}>
-            <Text style={styles.childCount}>{childCount}</Text>
-          </GlassButton>
+          <Text style={styles.title} numberOfLines={1}>
+            {session.name}
+          </Text>
         )}
         <View style={{ flex: 1 }} />
         <GlassButton size={32} onPress={onResolve}>
           <Text style={styles.checkIcon}>{"\u2713"}</Text>
         </GlassButton>
-      </View>
+      </Pressable>
+
+      <MessageList messages={messages} scrollEnabled={scrollEnabled} />
 
       {/* Card input bar */}
       {session.status !== "resolved" && <View style={styles.inputArea}>
@@ -233,43 +210,36 @@ const styles = StyleSheet.create({
   } as any,
   containerFocused: {} as any,
   containerUnfocused: {} as any,
-  headerOverlay: {
-    ...(Platform.OS === "web"
-      ? { position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 }
-      : { position: "absolute", top: 0, left: 0, right: 0 }),
-    height: 52,
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     gap: 8,
   } as any,
   title: {
-    ...theme.typography.cardTitle,
+    fontSize: 16,
+    fontWeight: "500" as const,
+    color: "rgba(0,0,0,0.78)",
+    fontFamily: theme.fonts.sans,
     flexShrink: 1,
   },
   depthIndicator: {
     ...theme.typography.cardDepthIndicator,
     marginLeft: 4,
   },
-  childCount: {
-    fontSize: 12,
-    fontWeight: "600" as const,
-    color: "rgba(0,0,0,0.70)",
-    fontFamily: theme.fonts.sans,
-  },
   checkIcon: {
     ...theme.typography.cardCheckIcon,
   },
   titleInput: {
-    ...theme.typography.cardTitleInput,
+    fontSize: 16,
+    fontWeight: "500" as const,
+    color: "rgba(0,0,0,0.78)",
+    fontFamily: theme.fonts.sans,
     flexShrink: 1,
     minWidth: 80,
-    ...(Platform.OS === "web" ? { outlineStyle: "none", fontFamily: theme.fonts.sans, lineHeight: "normal", padding: 0, margin: 0 } : {}),
+    ...(Platform.OS === "web" ? { outlineStyle: "none", lineHeight: "normal", padding: 0, margin: 0 } : {}),
   } as any,
-  editLabel: {
-    ...theme.typography.cardEditLabel,
-  },
   // Card input bar — floating overlay at bottom
   inputArea: {
     ...(Platform.OS === "web"

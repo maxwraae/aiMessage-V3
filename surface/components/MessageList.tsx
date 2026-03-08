@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   } as any,
   content: {
     paddingHorizontal: theme.layout.messagePadH,
-    paddingTop: theme.layout.messagePadTop,
+    paddingTop: 8,
     paddingBottom: theme.layout.messagePadBottom,
   },
   messageRow: {

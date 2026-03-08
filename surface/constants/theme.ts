@@ -213,7 +213,7 @@ export const theme = {
     },
     /** Header + button icons */
     plusIcon: {
-      fontSize: 20,
+      fontSize: 22,
       fontWeight: "300" as const,
       color: "rgba(0,0,0,0.45)",
       fontFamily: FONTS.sans,
