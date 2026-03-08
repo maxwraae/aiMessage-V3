@@ -188,6 +188,14 @@ export default function App() {
     setActiveAgentIds((prev) => prev.filter((id) => id !== agent.id));
   }, []);
 
+  const hibernateAgent = useCallback((agentId: string) => {
+    // Fire-and-forget: tell the server to hibernate the engine session
+    fetch(`/api/sessions/${agentId}/hibernate`, { method: "POST" }).catch(() => {});
+    // Remove from stage and agents list immediately
+    setActiveAgentIds((prev) => prev.filter((id) => id !== agentId));
+    setAgents((prev) => prev.filter((a) => a.id !== agentId));
+  }, []);
+
   const stopAgent = useCallback(async (agentId: string) => {
     await fetch(`/api/agents/${agentId}`, { method: "DELETE" }).catch(() => {});
   }, []);
@@ -303,6 +311,12 @@ export default function App() {
 
   const handleTitleUpdate = useCallback((agentId: string, newTitle: string) => {
     setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, title: newTitle } : a));
+    setSessions((prev) => prev.map((s) => s.id === agentId ? { ...s, title: newTitle } : s));
+  }, []);
+
+  const handleSessionRenamed = useCallback((sessionId: string, newTitle: string) => {
+    setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, title: newTitle } : s));
+    setAgents((prev) => prev.map((a) => a.id === sessionId ? { ...a, title: newTitle } : a));
   }, []);
 
   const handleUnreadReset = useCallback((agentId: string) => {
@@ -622,7 +636,7 @@ export default function App() {
 
                     {/* Action buttons — visible on hover */}
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity min-w-[44px] justify-end ml-2">
-                      {agent && <button onClick={(e) => { e.stopPropagation(); killAgent(agent); }} className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
+                      {agent && <button onClick={(e) => { e.stopPropagation(); hibernateAgent(agent.id); }} className="w-4 h-4 rounded-full bg-[#ff5f56] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
                       <button onClick={(e) => { e.stopPropagation(); removeFromStage(id); }} className="w-4 h-4 rounded-full bg-[#ffbd2e] flex items-center justify-center shadow-sm flex-shrink-0 group/btn"><svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="opacity-0 group-hover/btn:opacity-100 flex-shrink-0"><path d="M5 12h14"/></svg></button>
                     </div>
                   </div>
@@ -631,6 +645,7 @@ export default function App() {
                       key={id}
                       agentId={id}
                       onTitleUpdate={(title) => handleTitleUpdate(id, title)}
+                      onSessionRenamed={handleSessionRenamed}
                       onUnreadReset={() => handleUnreadReset(id)}
                       onStatusChange={handleStatusChange}
                       onModelSwitch={switchAgentModel}

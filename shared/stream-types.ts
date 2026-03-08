@@ -4,8 +4,14 @@ export interface ImageAttachment {
   filename?: string;
 }
 
+export interface FileAttachment {
+  filePath: string;
+  filename: string;
+  fileSize: number;
+}
+
 export type StreamItem =
-  | { kind: "user_message"; text: string; id: string; timestamp: string }
+  | { kind: "user_message"; text: string; id: string; timestamp: string; images?: ImageAttachment[]; files?: FileAttachment[] }
   | { kind: "assistant_message"; text: string; id: string; timestamp: string }
   | { kind: "text_delta"; text: string; id: string; timestamp: string }
   | { kind: "thought"; text: string; id: string; timestamp: string; status: "loading" | "ready" }
@@ -19,9 +25,10 @@ export type ChatWsServerMessage =
   | { type: "stream_item"; item: StreamItem }
   | { type: "agent_status"; status: "idle" | "thinking" | "done" | "error" }
   | { type: "chat_title_update"; title: string }
+  | { type: "session_renamed"; sessionId: string; title: string }
   | { type: "unread_cleared" }
   | { type: "context_cleared" }
   | { type: "plan_mode_entered" };
 
 export type ChatWsClientMessage =
-  | { type: "user_input"; text: string; images?: ImageAttachment[] };
+  | { type: "user_input"; text: string; images?: ImageAttachment[]; files?: FileAttachment[] };

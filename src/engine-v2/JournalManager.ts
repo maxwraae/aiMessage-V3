@@ -4,7 +4,7 @@ import * as os from 'node:os';
 import * as crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { isNoise } from '../../shared/filter-config.js';
-import { ImageAttachment } from '../../shared/stream-types.js';
+import { ImageAttachment, FileAttachment } from '../../shared/stream-types.js';
 
 export type SessionStatus = 'idle' | 'busy' | 'sleeping' | 'error';
 
@@ -28,6 +28,7 @@ export interface InputEntry {
   text: string;
   timestamp: string;
   images?: ImageAttachment[];
+  files?: FileAttachment[];
 }
 
 /**

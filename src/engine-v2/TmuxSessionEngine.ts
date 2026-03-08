@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { JournalManager, SessionMetadata, InputEntry } from './JournalManager.js';
-import { ImageAttachment } from '../../shared/stream-types.js';
+import { ImageAttachment, FileAttachment } from '../../shared/stream-types.js';
 import { MuxManager } from './MuxManager.js';
 import * as fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
@@ -89,7 +89,7 @@ export class TmuxSessionEngine extends EventEmitter {
    * Submits user input. Writes to in.jsonl for persistence and triggers
    * FIFO delivery to the Claude process.
    */
-  async submit(sessionId: string, clientId: string, text: string, images?: ImageAttachment[]): Promise<void> {
+  async submit(sessionId: string, clientId: string, text: string, images?: ImageAttachment[], files?: FileAttachment[]): Promise<void> {
     const journal = await this.getJournal(sessionId);
 
     const entry = await journal.appendInput({
@@ -97,7 +97,8 @@ export class TmuxSessionEngine extends EventEmitter {
       clientId,
       type: 'user',
       text,
-      ...(images && images.length > 0 ? { images } : {})
+      ...(images && images.length > 0 ? { images } : {}),
+      ...(files && files.length > 0 ? { files } : {})
     });
 
     // Write user_message to out.jsonl so the UI shows it immediately
@@ -107,7 +108,9 @@ export class TmuxSessionEngine extends EventEmitter {
         kind: 'user_message',
         text: entry.text,
         id: entry.id,
-        timestamp: entry.timestamp
+        timestamp: entry.timestamp,
+        ...(images && images.length > 0 ? { images } : {}),
+        ...(files && files.length > 0 ? { files } : {})
       }
     };
     await journal.appendOutput(JSON.stringify(uiFrame));
@@ -372,7 +375,19 @@ export class TmuxSessionEngine extends EventEmitter {
       try {
         const journal = await this.getJournal(sessionId);
         const meta = await journal.getMetadata();
-        if (!meta) continue;
+        if (!meta) {
+          console.log(`[TmuxEngine] Reconcile: no metadata for ${sessionId}, killing tmux`);
+          await this.mux.killSession(sessionId);
+          continue;
+        }
+
+        // Kill sessions older than TTL
+        const lastSeen = meta.lastSeen ? new Date(meta.lastSeen).getTime() : 0;
+        if (Date.now() - lastSeen > GOVERNANCE.SESSION_TTL_MS) {
+          console.log(`[TmuxEngine] Reconcile: killing stale session ${sessionId} (last seen ${meta.lastSeen || 'never'})`);
+          await this.mux.killSession(sessionId);
+          continue;
+        }
 
         // Reconnect FIFO to the existing tmux session
         await this.openFifo(sessionId);
@@ -502,7 +517,7 @@ export class TmuxSessionEngine extends EventEmitter {
     // Governance: enforce concurrent session limit
     if (this.fifos.size >= GOVERNANCE.MAX_CONCURRENT_SESSIONS) {
       // Try to hibernate the oldest idle session to make room
-      const reaped = this.reapOldestIdle();
+      const reaped = await this.reapOldestIdle();
       if (!reaped) {
         throw new Error(`Session limit reached (${GOVERNANCE.MAX_CONCURRENT_SESSIONS} concurrent). All sessions are busy.`);
       }
@@ -635,12 +650,19 @@ export class TmuxSessionEngine extends EventEmitter {
       // Construct Claude JSON streaming input
       const claudeSessionId = meta?.claudeSessionId;
 
+      // Build the text, prepending file paths if non-image files are attached
+      let messageText = next.text;
+      if (next.files && next.files.length > 0) {
+        const paths = next.files.map(f => f.filePath).join('\n');
+        messageText = `[Attached files]\n${paths}\n\n${next.text}`;
+      }
+
       // Build content: if images are attached, use a content block array;
       // otherwise fall back to a plain text string for backwards compatibility.
       let content: string | Array<Record<string, unknown>>;
       if (next.images && next.images.length > 0) {
         const blocks: Array<Record<string, unknown>> = [
-          { type: 'text', text: next.text }
+          { type: 'text', text: messageText }
         ];
         for (const img of next.images) {
           blocks.push({
@@ -654,7 +676,7 @@ export class TmuxSessionEngine extends EventEmitter {
         }
         content = blocks;
       } else {
-        content = next.text;
+        content = messageText;
       }
 
       const payload = JSON.stringify({
@@ -1044,10 +1066,22 @@ export class TmuxSessionEngine extends EventEmitter {
   }
 
   /**
+   * Public entrypoint for hibernating a session on demand (e.g. red close button).
+   * Closes the FIFO, transitions to sleeping, and triggers auto-naming if not manually renamed.
+   */
+  async hibernateSession(sessionId: string): Promise<void> {
+    this.hibernate(sessionId);
+    if (!isManuallyRenamed(sessionId)) {
+      const journal = this.journals.get(sessionId);
+      if (journal) await this.autoNameSession(sessionId, journal).catch(() => {});
+    }
+  }
+
+  /**
    * Finds and hibernates the oldest idle session to free up a slot.
    * Returns true if a session was reaped, false if none are available.
    */
-  private reapOldestIdle(): boolean {
+  private async reapOldestIdle(): Promise<boolean> {
     let oldestId: string | null = null;
     let oldestTime = Infinity;
     for (const [id, monitor] of this.monitors.entries()) {
@@ -1059,7 +1093,7 @@ export class TmuxSessionEngine extends EventEmitter {
       }
     }
     if (oldestId) {
-      this.hibernate(oldestId);
+      await this.destroy(oldestId);
       return true;
     }
     return false;
@@ -1077,14 +1111,14 @@ export class TmuxSessionEngine extends EventEmitter {
       for (const [id, monitor] of this.monitors.entries()) {
         const status = this.sessionStatus.get(id);
 
-        // 1. Idle timeout — hibernate after 10 min of inactivity
+        // 1. Idle timeout — destroy after 10 min of inactivity
         if (status === 'idle' && this.fifos.has(id) && now - monitor.lastActivity > GOVERNANCE.IDLE_REAP_MS) {
-          this.hibernate(id);
-          // Re-name on sleep (skip if manually renamed)
+          // Auto-name before destroy (since destroy cleans up journal from map)
           if (!isManuallyRenamed(id)) {
             const journal = this.journals.get(id);
             if (journal) this.autoNameSession(id, journal).catch(() => {});
           }
+          this.destroy(id).catch(err => console.error(`[Reaper] Failed to destroy idle ${id}:`, err));
           continue;
         }
 
@@ -1112,7 +1146,7 @@ export class TmuxSessionEngine extends EventEmitter {
           }
         }
 
-        // 3. Session TTL — hibernate sessions older than 4 hours
+        // 3. Session TTL — destroy sessions older than 4 hours
         if (this.fifos.has(id)) {
           const journal = this.journals.get(id);
           if (journal) {
@@ -1120,12 +1154,31 @@ export class TmuxSessionEngine extends EventEmitter {
               if (meta?.createdAt) {
                 const age = now - new Date(meta.createdAt).getTime();
                 if (age > GOVERNANCE.SESSION_TTL_MS) {
-                  console.log(`[TmuxEngine] Session TTL expired: ${id} is ${Math.round(age / 3600000)}h old. Hibernating.`);
-                  this.hibernate(id);
+                  console.log(`[TmuxEngine] Session TTL expired: ${id} is ${Math.round(age / 3600000)}h old. Destroying.`);
+                  if (!isManuallyRenamed(id)) {
+                    this.autoNameSession(id, journal).catch(() => {});
+                  }
+                  this.destroy(id).catch(err => console.error(`[Reaper] Failed to destroy TTL-expired ${id}:`, err));
                 }
               }
             }).catch(() => {});
           }
+        }
+      }
+
+      // 4. Enforce MAX_TMUX_SESSIONS — destroy oldest sleeping sessions over the limit
+      const aliveCount = this.monitors.size;
+      if (aliveCount > GOVERNANCE.MAX_TMUX_SESSIONS) {
+        const sleeping = [...this.monitors.entries()]
+          .filter(([id]) => this.sessionStatus.get(id) === 'sleeping' || !this.fifos.has(id))
+          .sort((a, b) => a[1].lastActivity - b[1].lastActivity);
+
+        let toKill = aliveCount - GOVERNANCE.MAX_TMUX_SESSIONS;
+        for (const [id] of sleeping) {
+          if (toKill <= 0) break;
+          console.log(`[Reaper] MAX_TMUX_SESSIONS exceeded. Destroying oldest sleeping: ${id}`);
+          this.destroy(id).catch(err => console.error(`[Reaper] Failed to destroy ${id}:`, err));
+          toKill--;
         }
       }
     }, GOVERNANCE.REAPER_INTERVAL_MS);
